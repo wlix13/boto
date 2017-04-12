@@ -73,7 +73,8 @@ class CloudWatchConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 aws_sudo_id=None):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -99,6 +100,14 @@ class CloudWatchConnection(AWSQueryConnection):
                                                    security_token,
                                                    validate_certs=validate_certs,
                                                    profile_name=profile_name)
+        self.aws_sudo_id = aws_sudo_id
+
+    def make_request(self, action, params=None, path='/', verb='GET'):
+        if self.aws_sudo_id:
+            if params is None:
+                params = {}
+            params['AWSSudoId'] = self.aws_sudo_id
+        return AWSQueryConnection.make_request(self, action, params, path, verb)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
