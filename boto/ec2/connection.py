@@ -4479,7 +4479,8 @@ class EC2Connection(AWSQueryConnection):
                                VPCAttribute, verb='POST')
 
     def modify_vpc_attribute(self, vpc_id, enable_dns_support=None,
-                             enable_dns_hostnames=None, dry_run=False):
+                             enable_dns_hostnames=None, dry_run=False,
+                             description=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -4494,6 +4495,8 @@ class EC2Connection(AWSQueryConnection):
         if enable_dns_hostnames is not None:
             params['EnableDnsHostnames.Value'] = (
                 'true' if enable_dns_hostnames else 'false')
+        if description is not None:
+            params['Description.Value'] = description
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVpcAttribute', params, verb='POST')
