@@ -3004,7 +3004,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)], verb='POST')
 
-    def create_security_group(self, name, description, vpc_id=None,
+    def create_security_group(self, name, description, group_type=None,
                               dry_run=False):
         """
         Create a new security group for your account.
@@ -3017,9 +3017,8 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: The description of the new security group
 
-        :type vpc_id: string
-        :param vpc_id: The ID of the VPC to create the security group in,
-                       if any.
+        :type group_type: string
+        :param group_type: Security group type (interconnect|vpc)
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -3030,8 +3029,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName': name,
                   'GroupDescription': description}
 
-        if vpc_id is not None:
-            params['VpcId'] = vpc_id
+        if group_type is not None:
+            params['GroupType'] = group_type
 
         if dry_run:
             params['DryRun'] = 'true'
@@ -3040,8 +3039,6 @@ class EC2Connection(AWSQueryConnection):
                                 SecurityGroup, verb='POST')
         group.name = name
         group.description = description
-        if vpc_id is not None:
-            group.vpc_id = vpc_id
         return group
 
     def delete_security_group(self, name=None, group_id=None, dry_run=False):
