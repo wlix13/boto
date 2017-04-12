@@ -754,7 +754,11 @@ class EC2Connection(AWSQueryConnection):
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
                       ebs_optimized=False, network_interfaces=None,
-                      dry_run=False):
+                      dry_run=False,
+                      high_available=None,
+                      root_device_name=None, public_addressing=None,
+                      virtualization_type=None, description=None,
+                      private_dns_name=None):
         """
         Runs an image on EC2.
 
@@ -907,6 +911,21 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type high_available: bool
+        :param high_available: Turn on high availability option for the instances.
+
+        :type root_device_name: string
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
+
+        :type public_addressing: bool
+        :param public_addressing: Assign elastic IPs to the instances if available.
+
+        :type virtualization_type: string
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
+
+        :type description: string
+        :param description: Instance description.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -977,6 +996,18 @@ class EC2Connection(AWSQueryConnection):
             network_interfaces.build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
+        if high_available is not None:
+            params['HighAvailable'] = 'true' if high_available else 'false'
+        if root_device_name:
+            params['RootDeviceName'] = root_device_name
+        if public_addressing is not None:
+            params['AddressingType'] = 'public' if public_addressing else 'private'
+        if virtualization_type:
+            params['VirtualizationType'] = virtualization_type
+        if description:
+            params['Description'] = description
+        if private_dns_name:
+            params['PrivateDnsName'] = private_dns_name
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -1065,7 +1096,8 @@ class EC2Connection(AWSQueryConnection):
         self.build_list_params(params, [instance_id], 'InstanceId')
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_object('GetConsoleOutput', params,
+        return self.get_object('GetConsoleOutput',
+                               {'InstanceId':instance_id},
                                ConsoleOutput, verb='POST')
 
     def reboot_instances(self, instance_ids=None, dry_run=False):
@@ -1127,6 +1159,7 @@ class EC2Connection(AWSQueryConnection):
             * groupSet
             * ebsOptimized
             * sriovNetSupport
+            * description
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1894,7 +1927,8 @@ class EC2Connection(AWSQueryConnection):
     def _associate_address(self, status, instance_id=None, public_ip=None,
                            allocation_id=None, network_interface_id=None,
                            private_ip_address=None, allow_reassociation=False,
-                           dry_run=False):
+                           dry_run=False,
+                           private_ip_address_id=None):
         params = {}
         if instance_id is not None:
                 params['InstanceId'] = instance_id
@@ -1913,6 +1947,9 @@ class EC2Connection(AWSQueryConnection):
         if allow_reassociation:
             params['AllowReassociation'] = 'true'
 
+        elif private_ip_address_id is not None:
+                params['PrivateIpAddressId'] = private_ip_address_id
+
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -1925,7 +1962,8 @@ class EC2Connection(AWSQueryConnection):
     def associate_address(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
                           private_ip_address=None, allow_reassociation=False,
-                          dry_run=False):
+                          dry_run=False,
+                          private_ip_address_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1960,6 +1998,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
+
+        :type private_ip_address_id: string
+        :param private_ip_address_id: The private IP address ID to which
+            elastic IP is to be assigned to
 
         :rtype: bool
         :return: True if successful
@@ -2022,6 +2064,7 @@ class EC2Connection(AWSQueryConnection):
             public_ip=public_ip, allocation_id=allocation_id,
             network_interface_id=network_interface_id,
             private_ip_address=private_ip_address,
+            private_ip_address_id=private_ip_address_id,
             allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def disassociate_address(self, public_ip=None, association_id=None,
@@ -4549,6 +4592,56 @@ class EC2Connection(AWSQueryConnection):
             params['NextToken'] = next_token
         return self.get_list('DescribeClassicLinkInstances', params,
                              [('item', Instance)], verb='POST')
+
+    # C2 specific methods
+
+    # Instances
+
+    def attach_virtual_network(self, instance_id, network_id):
+        """
+        Attach virtual network to (stopped) instance.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type network_id: string
+        :param network_id: The ID of the virtual network to be attached
+        """
+        params = {'InstanceId' : instance_id,
+                  'NetworkId' : network_id}
+        return self.get_status('AttachVirtualNetwork', params, verb='POST')
+
+    def detach_virtual_network(self, instance_id, network_id):
+        """
+        Detach virtual network from (stopped) instance.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type network_id: string
+        :param network_id: The ID of the virtual network to be detached
+        """
+
+        params = {'InstanceId': instance_id,
+                  'NetworkId': network_id}
+        return self.get_status('DetachVirtualNetwork', params, verb='POST')
+
+    def suspend_instances(self, instance_ids):
+        """
+        Suspend the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to suspend
+
+        :rtype: list
+        :return: A list of the instances suspended
+        """
+
+        params = {}
+        self.build_list_params(params, instance_ids, 'InstanceId')
+
+        return self.get_list('SuspendInstances', params, [('item', Instance)], verb='POST')
+
 
     # External networks
 
