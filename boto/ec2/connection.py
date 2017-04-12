@@ -34,6 +34,7 @@ import boto
 from boto.auth import detect_potential_sigv4
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
+from boto.resultset import BooleanResult
 from boto.ec2.image import Image, ImageAttribute, CopyImage
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
@@ -69,6 +70,8 @@ from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
 from boto.exception import BotoClientError
 from boto.compat import six
+from boto.ec2.export_task import ExportTask, ExportVolumeTask
+from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 
 #boto.set_stream_logger('ec2')
 
@@ -499,7 +502,6 @@ class EC2Connection(AWSQueryConnection):
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
-
 
         :type description: string
         :param description: Description of the image
@@ -2828,7 +2830,6 @@ class EC2Connection(AWSQueryConnection):
 
         if description:
              params['Description.Value'] = description
-
         if not operation and (user_ids or groups):
             raise BotoClientError('No operation type was specified')
         if user_ids:
@@ -3074,7 +3075,6 @@ class EC2Connection(AWSQueryConnection):
 
         if group_type is not None:
             params['GroupType'] = group_type
-
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -4642,7 +4642,6 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_list('SuspendInstances', params, [('item', Instance)], verb='POST')
 
-
     # External networks
 
     def attach_extnetwork(self, network_name, group_name):
@@ -4746,3 +4745,336 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'PrivateAddressId': private_ip_address_id}
         return self.get_status('DeletePrivateIpAddress', params, verb='POST')
+
+    # Import/Export
+
+    def build_dict_list_params(self, params, items, label):
+        if isinstance(items, str):
+            items = [items]
+        for i, item in enumerate(items, 1):
+            if isinstance(item, dict):
+                for key, value in self._flatten_dict(item):
+                    params['%s.%d.%s' % (label, i, key)] = value
+            else:
+                params['%s.%d' % (label, i)] = item
+
+    @staticmethod
+    def _flatten_dict(d):
+        def traverse_dict(dct, base_keys=None):
+            if base_keys is None:
+                base_keys = []
+            if isinstance(dct, dict):
+                for key, value in dct.items():
+                    for path, val in traverse_dict(value, base_keys + [key]):
+                        yield path, val
+            else:
+                yield base_keys, dct
+
+        return [(".".join(keys), value) for keys, value in traverse_dict(d)]
+
+    def import_image(self, disk_containers, description=None,
+                     architecture=None, platform=None,
+                     notify=False, email=None):
+        """
+        Create import image tasks.
+
+        :type disk_containers: list
+        :param disk_containers: list of disk containers, format
+                                ``[{"Format": "RAW", "UserBucket": {"S3Bucket": "bucket", "S3Key": "key"}}]``
+
+        :type description: string
+        :param description: Image description
+
+        :type architecture: string
+        :param architecture: The architecture of the virtual machine. Valid values: i386 | x86_64
+
+        :type platform: string
+        :param platform: The operating system of the virtual machine. Valid values: Windows | Linux
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.import_task.ImportImageTask`
+        :return: An instance of ImportImageTask.
+        """
+        params = {}
+        self.build_dict_list_params(params, disk_containers, 'DiskContainer')
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
+
+    def import_snapshot(self, bucket, key, disk_format=None, url=None, description=None,
+                        notify=False, email=None):
+        """
+        Create import snapshot task.
+
+        :type bucket: string
+        :param bucket: The name of the S3 bucket where the disk image is located.
+
+        :type key: string
+        :param key: The key for the disk image.
+
+        :type disk_format: string
+        :param disk_format: The format of the disk image being imported.
+
+        :type url: string
+        :param url: The URL to the Amazon S3-based disk image being imported
+
+        :type description: string
+        :param description: Snapshot description
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.import_task.ImportSnapshotTask`
+        :return: An instance of ImportSnapshotTask.
+        """
+        params = {
+            'DiskContainer.Format': disk_format or '',
+            'DiskContainer.Url': url or '',
+            'DiskContainer.UserBucket.S3Bucket': bucket,
+            'DiskContainer.UserBucket.S3Key': key,
+        }
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportSnapshot', params, ImportSnapshotTask, verb='POST')
+
+    def describe_import_snapshot_tasks(self, import_task_ids=None, filters=None):
+        """
+        Returns information about import snapshot tasks.
+
+        :type import_task_ids: list
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ImportSnapshotTask
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportSnapshotTasks', params,
+                             [('item', ImportSnapshotTask)], verb='POST')
+
+    def cancel_import_task(self, import_task_id, cancel_reason=None):
+        """
+        Cancel import task.
+
+        :type import_task_id: string
+        :param import_task_id: Task ID
+
+        :type import_task_id: string
+        :param cancel_reason: Cancel reason (optional)
+
+        :rtype: class:`boto.ec2.instance.Reservation`
+        :return: An instance of Reservation
+        """
+        params = {'ImportTaskId': import_task_id}
+        if cancel_reason:
+            params['CancelReason'] = cancel_reason
+        return self.get_object('CancelImportTask', params, Reservation, verb='POST')
+
+    def describe_import_image_tasks(self, import_task_ids=None, filters=None):
+        """
+        Return information about import image tasks.
+
+        :type import_task_ids: list
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ImportImageTask
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportImageTasks', params,
+                             [('item', ImportImageTask)], verb='POST')
+
+    def create_instance_export_task(self, instance_id, s3_bucket, s3_prefix=None, description=None,
+                                    target_environment=None, container_format="OVA", disk_image_format="VMDK",
+                                    notify=False, email=None):
+        """
+        Create instance export task.
+
+        :type instance_id: string
+        :param instance_id: The ID of the instance.
+
+        :type s3_bucket: string
+        :param s3_bucket: The S3 bucket for the destination image.
+
+        :type s3_prefix: string
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+
+        :type description: string
+        :param description: A description for the conversion task or the resource being exported.
+
+        :type target_environment: string
+        :param target_environment: The target virtualization environment.
+
+        :type container_format: string
+        :param container_format: The container format used to combine disk images
+
+        :type disk_image_format: string
+        :param disk_image_format: The format for the exported image.
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.export_task.ExportTask`
+        :return: An instance of ExportTask`
+        """
+        params = {
+            'InstanceId': instance_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if container_format:
+            params['ExportToS3.ContainerFormat'] = container_format
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if target_environment:
+            params['TargetEnvironment'] = target_environment
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateInstanceExportTask', params, ExportTask, verb='POST')
+
+    def describe_export_tasks(self, export_task_ids):
+        """
+        Return information about export instance tasks.
+
+        :type export_task_ids: list
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ExportTask
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportTasks', params,
+                             [('item', ExportTask)], verb='GET')
+
+    def cancel_export_task(self, export_task_id):
+        """
+        Cancel export task.
+
+        :type export_task_id: string
+        :param export_task_id: Task ID
+
+        :rtype: class:`boto.resultset.BooleanResult`
+        :return: An instance of BooleanResult
+        """
+        params = {'ExportTaskId': export_task_id}
+        return self.get_object('CancelExportTask', params, BooleanResult, verb='POST')
+
+    # Custom method for changing task priority
+
+    def modify_task_priority(self, task_id, priority):
+        """
+        Modify task priority.
+
+        :type task_id: string
+        :param task_id: Task ID
+
+        :type priority: int
+        :param priority: Priority (-1, 0, 1)
+
+        :rtype: class:`boto.resultset.BooleanResult`
+        :return: An instance of BooleanResult
+        """
+        params = {'TaskId': task_id, 'Priority': priority}
+        return self.get_object('ModifyTaskPriority', params, BooleanResult, verb='POST')
+
+    # Custom volume export methods
+
+    def create_volume_export_task(self, volume_id, s3_bucket, s3_prefix=None, description=None,
+                                  disk_image_format=None, notify=False, email=None):
+        """
+        Create instance export task.
+
+        :type volume_id: string
+        :param volume_id: The ID of the volume.
+
+        :type s3_bucket: string
+        :param s3_bucket: The S3 bucket for the destination image.
+
+        :type s3_prefix: string
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+
+        :type description: string
+        :param description: A description for the conversion task or the resource being exported.
+
+        :type disk_image_format: string
+        :param disk_image_format: The format for the exported image.
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.export_task.ExporVolumeTask`
+        :return: An instance of ExportVolumeTask
+        """
+        params = {
+            'VolumeId': volume_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateVolumeExportTask', params, ExportVolumeTask, verb='POST')
+
+    def describe_export_volume_tasks(self, export_task_ids):
+        """
+        Return information about export volume tasks.
+
+        :type export_task_ids: list
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ExportVolumeTask
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportVolumeTasks', params,
+                             [('item', ExportVolumeTask)], verb='GET')
