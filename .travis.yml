@@ -1,3 +1,4 @@
+sudo: false
 language: python
 python:
   - "2.6"
@@ -5,7 +6,7 @@ python:
   - "3.3"
   - "3.4"
   - "3.5"
-  - "pypy"
+  - "pypy-5.3.1"
 env:
   - BOTO_CONFIG=/tmp/nowhere
 before_install:
@@ -13,9 +14,10 @@ before_install:
       echo "No pull requests can be sent to the master branch" 1>&2;
       exit 1;
     fi
-  - sudo apt-get update
-  - sudo apt-get --reinstall install -qq language-pack-en language-pack-de
-  - sudo apt-get install swig
+addons:
+  apt:
+    packages:
+      - swig
 install:
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then travis_retry pip install -r requirements-py26.txt; fi
   - travis_retry pip install -r requirements.txt
