@@ -67,6 +67,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.exception import BotoClientError
 from boto.compat import six
 
 #boto.set_stream_logger('ec2')
@@ -305,7 +306,7 @@ class EC2Connection(AWSQueryConnection):
             the instances
 
         :type root_device_name: string
-        :param root_device_name: The root device name (e.g. /dev/sdh)
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -315,10 +316,7 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         :type virtualization_type: string
-        :param virtualization_type: The virutalization_type of the image.
-            Valid choices are:
-            * paravirtual
-            * hvm
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
 
         :type sriov_net_support: string
         :param sriov_net_support: Advanced networking support.
@@ -372,16 +370,16 @@ class EC2Connection(AWSQueryConnection):
         image_id = getattr(rs, 'imageId', None)
         return image_id
 
-    def deregister_image(self, image_id, delete_snapshot=False, dry_run=False):
+    def deregister_image(self, image_id, delete_snapshots=False, dry_run=False):
         """
         Unregister an AMI.
 
         :type image_id: string
         :param image_id: the ID of the Image to unregister
 
-        :type delete_snapshot: bool
-        :param delete_snapshot: Set to True if we should delete the
-            snapshot associated with an EBS volume mounted at /dev/sda1
+        :type delete_snapshots: bool
+        :param delete_snapshots: Set to True to delete all snapshots associated
+            with the image
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -389,23 +387,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        snapshot_id = None
-        if delete_snapshot:
-            image = self.get_image(image_id)
-            for key in image.block_device_mapping:
-                if key == "/dev/sda1":
-                    snapshot_id = image.block_device_mapping[key].snapshot_id
-                    break
-        params = {
-            'ImageId': image_id,
-        }
-        if dry_run:
-            params['DryRun'] = 'true'
-        result = self.get_status('DeregisterImage',
-                                 params, verb='POST')
-        if result and snapshot_id:
-            return result and self.delete_snapshot(snapshot_id)
-        return result
+        return self.get_status('DeregisterImage',
+                               {'ImageId':image_id,
+                                'DeleteSnapshots':delete_snapshots}, verb='POST')
 
     def create_image(self, instance_id, name,
                      description=None, no_reboot=False,
@@ -485,9 +469,10 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeImageAttribute', params,
                                ImageAttribute, verb='POST')
 
-    def modify_image_attribute(self, image_id, attribute='launchPermission',
+    def modify_image_attribute(self, image_id, attribute=None,
                                operation='add', user_ids=None, groups=None,
-                               product_codes=None, dry_run=False):
+                               product_codes=None, dry_run=False,
+                               description=None):
         """
         Changes an attribute of an image.
 
@@ -515,14 +500,22 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+
+        :type description: string
+        :param description: Description of the image
         """
-        params = {'ImageId': image_id,
-                  'Attribute': attribute,
-                  'OperationType': operation}
+        params = {'ImageId': image_id}
+
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
+        if description:
+             params['Description.Value'] = description
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+            for i,user_id in enumerate(user_ids):
+                params['LaunchPermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+            for i,group in enumerate(groups):
+                params['LaunchPermission.%s.%d.Group' % (operation.title(),i+1)] = group
         if product_codes:
             self.build_list_params(params, product_codes, 'ProductCode')
         if dry_run:
@@ -2284,8 +2277,8 @@ class EC2Connection(AWSQueryConnection):
 
         """
         params = {'VolumeId': volume_id}
-        if attribute == 'AutoEnableIO':
-            params['AutoEnableIO.Value'] = new_value
+        if attribute in ('AutoEnableIO', 'Description', 'Size', "Iops"):
+            params[attribute + '.Value'] = new_value
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
@@ -2365,7 +2358,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVolume', params, verb='POST')
 
-    def attach_volume(self, volume_id, instance_id, device, dry_run=False):
+    def attach_volume(self, volume_id, instance_id, device=None, dry_run=False,
+                      attach_type=None):
         """
         Attach an EBS volume to an EC2 instance.
 
@@ -2387,10 +2381,13 @@ class EC2Connection(AWSQueryConnection):
         :return: True if successful
         """
         params = {'InstanceId': instance_id,
-                  'VolumeId': volume_id,
-                  'Device': device}
+                  'VolumeId': volume_id}
         if dry_run:
             params['DryRun'] = 'true'
+        if device is not None:
+            params['Device'] = device
+        if attach_type is not None:
+            params['AttachType'] = attach_type
         return self.get_status('AttachVolume', params, verb='POST')
 
     def detach_volume(self, volume_id, instance_id=None,
@@ -2482,8 +2479,12 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
 
         if owner:
+            if not isinstance(owner, list):
+                owner=[owner]
             self.build_list_params(params, owner, 'Owner')
         if restorable_by:
+            if not isinstance(restorable_by, list):
+                restorable_by=[restorable_by]
             self.build_list_params(params, restorable_by, 'RestorableBy')
         if filters:
             self.build_filter_params(params, filters)
@@ -2497,7 +2498,8 @@ class EC2Connection(AWSQueryConnection):
         Create a snapshot of an existing EBS Volume.
 
         :type volume_id: str
-        :param volume_id: The ID of the volume to be snapshot'ed
+        :param volume_id: The ID of the volume or path to the file in S3 to be
+                          snapshot'ed.
 
         :type description: str
         :param description: A description of the snapshot.
@@ -2516,10 +2518,6 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
-        volume = self.get_all_volumes([volume_id], dry_run=dry_run)[0]
-        volume_name = volume.tags.get('Name')
-        if volume_name:
-            snapshot.add_tag('Name', volume_name)
         return snapshot
 
     def delete_snapshot(self, snapshot_id, dry_run=False):
@@ -2755,9 +2753,9 @@ class EC2Connection(AWSQueryConnection):
                                SnapshotAttribute, verb='POST')
 
     def modify_snapshot_attribute(self, snapshot_id,
-                                  attribute='createVolumePermission',
                                   operation='add', user_ids=None, groups=None,
-                                  dry_run=False):
+                                  dry_run=False,
+                                  attribute=None, description=None):
         """
         Changes an attribute of an image.
 
@@ -2783,13 +2781,19 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         """
-        params = {'SnapshotId': snapshot_id,
-                  'Attribute': attribute,
-                  'OperationType': operation}
+        params = {'SnapshotId' : snapshot_id}
+
+        if description:
+             params['Description.Value'] = description
+
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+             for i,user_id in enumerate(user_ids):
+                 params['CreateVolumePermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+             for i,group in enumerate(groups):
+                 params['CreateVolumePermission.%s.%d.Group' % (operation.title(),i+1)] = group
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifySnapshotAttribute', params, verb='POST')
@@ -4449,13 +4453,16 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('CopyImage', params, CopyImage,
                                verb='POST')
 
-    def describe_account_attributes(self, attribute_names=None, dry_run=False):
+    def describe_account_attributes(self, attribute_names=None, dry_run=False,
+                                    availability_zone=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
         """
         params = {}
+        if availability_zone:
+            params["AvailabilityZone"] = availability_zone
         if attribute_names is not None:
             self.build_list_params(params, attribute_names, 'AttributeName')
         if dry_run:

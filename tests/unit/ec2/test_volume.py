@@ -263,6 +263,12 @@ class VolumeAttributeTests(unittest.TestCase):
         self.volume_attribute.endElement("someName", "some value", None)
         self.assertEqual(self.volume_attribute.someName, "some value")
 
+    def test_endElement_with_name_value_and_value_is_bool(self):
+        for attr in ("autoEnableIO",):
+            self.volume_attribute._key_name = attr
+            self.volume_attribute.endElement("value", "True", None)
+            self.assertEqual(self.volume_attribute.attrs[attr], True)
+
 
 if __name__ == "__main__":
     unittest.main()

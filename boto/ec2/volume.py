@@ -45,6 +45,8 @@ class Volume(TaggedEC2Object):
     :ivar iops: If this volume is of type consistent-iops, this is
         the number of IOPS provisioned (10-300).
     :ivar encrypted: True if this volume is encrypted.
+    :ivar size_in_bytes: The size (in Bytes) of the volume.
+    :ivar description: Description of the volume.
     """
 
     def __init__(self, connection=None):
@@ -59,6 +61,8 @@ class Volume(TaggedEC2Object):
         self.type = None
         self.iops = None
         self.encrypted = None
+        self.size_in_bytes = None
+        self.description = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
@@ -96,6 +100,10 @@ class Volume(TaggedEC2Object):
             self.iops = int(value)
         elif name == 'encrypted':
             self.encrypted = (value.lower() == 'true')
+        elif name == 'sizeInBytes':
+            self.size_in_bytes = int(value)
+        elif name == 'description':
+            self.description = value
         else:
             setattr(self, name, value)
 
@@ -305,10 +313,7 @@ class VolumeAttribute(object):
 
     def endElement(self, name, value, connection):
         if name == 'value':
-            if value.lower() == 'true':
-                self.attrs[self._key_name] = True
-            else:
-                self.attrs[self._key_name] = False
+            self.attrs[self._key_name] = (value.lower() == 'true')
         elif name == 'volumeId':
             self.id = value
         else:

@@ -39,7 +39,10 @@ class BlockDeviceType(object):
                  size=None,
                  volume_type=None,
                  iops=None,
-                 encrypted=None):
+                 encrypted=None,
+                 snapshot_size=None,
+                 snapshot_description=None,
+                 attach_type=None):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -52,6 +55,10 @@ class BlockDeviceType(object):
         self.volume_type = volume_type
         self.iops = iops
         self.encrypted = encrypted
+        self.snapshot_size = snapshot_size
+        self.snapshot_description = snapshot_description
+        self.attach_type = attach_type
+        self.is_bootable = False
 
     def startElement(self, name, attrs, connection):
         pass
@@ -80,6 +87,14 @@ class BlockDeviceType(object):
             self.iops = int(value)
         elif lname == 'encrypted':
             self.encrypted = (value == 'true')
+        elif name == 'snapshotSize':
+            self.snapshot_size = value
+        elif name == 'snapshotDescription':
+            self.snapshot_description = value
+        elif name == "attachType":
+            self.attach_type = value
+        elif name == "isBootable":
+            self.is_bootable = (value == 'true')
         else:
             setattr(self, name, value)
 
