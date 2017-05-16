@@ -25,6 +25,8 @@ class Group(object):
     def __init__(self, parent=None):
         self.id = None
         self.name = None
+        self.description = None
+        self.type = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -34,5 +36,9 @@ class Group(object):
             self.id = value
         elif name == 'groupName':
             self.name = value
+        elif name == 'groupDescription':
+            self.description = value
+        elif name == 'groupType':
+            self.type = value
         else:
             setattr(self, name, value)

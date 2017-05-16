@@ -51,16 +51,20 @@ class VPCAttribute(object):
         self.vpc_id = None
         self.enable_dns_hostnames = None
         self.enable_dns_support = None
+        self.description = None
         self._current_attr = None
 
     def startElement(self, name, attrs, connection):
-        if name in ('enableDnsHostnames', 'enableDnsSupport'):
+        if name in ('enableDnsHostnames', 'enableDnsSupport',
+                    'description'):
             self._current_attr = name
 
     def endElement(self, name, value, connection):
         if name == 'vpcId':
             self.vpc_id = value
         elif name == 'value':
+            if self._current_attr == 'description':
+                self.description = value
             if value == 'true':
                 value = True
             else:

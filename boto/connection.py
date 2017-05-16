@@ -752,6 +752,9 @@ class AWSAuthConnection(object):
                     host, ca_certs=self.ca_certificates_file,
                     **http_connection_kwargs)
             else:
+                if "context" not in http_connection_kwargs and \
+                    hasattr(ssl, "_create_unverified_context"):
+                    http_connection_kwargs["context"] = ssl._create_unverified_context()
                 connection = http_client.HTTPSConnection(
                     host, **http_connection_kwargs)
         else:

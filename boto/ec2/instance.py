@@ -207,6 +207,10 @@ class Instance(TaggedEC2Object):
         or not.
     :ivar instance_profile: A Python dict containing the instance
         profile id and arn associated with this instance.
+    :ivar image_description: The description of the image.
+    :ivar description: The description of the instance.
+    :ivar high_availability: Whether instance high available or not.
+    :ivar remote_console: Value of instance remote console.
     """
 
     def __init__(self, connection=None):
@@ -250,6 +254,10 @@ class Instance(TaggedEC2Object):
         self._previous_state = None
         self._state = InstanceState()
         self._placement = InstancePlacement()
+        self.image_description = None
+        self.description = None
+        self.high_availability = None
+        self.remote_console = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -377,8 +385,7 @@ class Instance(TaggedEC2Object):
             else:
                 self.persistent = False
         elif name == 'groupName':
-            if self._in_monitoring_element:
-                self.group_name = value
+            self.group_name = value
         elif name == 'clientToken':
             self.client_token = value
         elif name == "eventsSet":
@@ -391,6 +398,14 @@ class Instance(TaggedEC2Object):
             self.architecture = value
         elif name == 'ebsOptimized':
             self.ebs_optimized = (value == 'true')
+        elif name == 'imageDescription':
+            self.image_description = value
+        elif name == 'description':
+            self.description = value
+        elif name == 'highAvailability':
+            self.high_availability = (value == 'true')
+        elif name == 'remoteConsole':
+            self.remote_console = value
         else:
             setattr(self, name, value)
 
@@ -631,7 +646,8 @@ class InstanceAttribute(dict):
                    'disableApiTermination',
                    'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
-                   'groupSet']
+                   'groupSet',
+                   'description']
 
     def __init__(self, parent=None):
         dict.__init__(self)

@@ -34,16 +34,19 @@ import boto
 from boto.auth import detect_potential_sigv4
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
+from boto.resultset import BooleanResult
 from boto.ec2.image import Image, ImageAttribute, CopyImage
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
 from boto.ec2.volume import Volume, VolumeAttribute
+from boto.ec2.volume import AttachmentSet
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
+from boto.ec2.extnetwork import ExtNetwork
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering
@@ -57,6 +60,7 @@ from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
+from boto.ec2.private_ip import PrivateIP
 from boto.ec2.tag import Tag
 from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
@@ -65,7 +69,10 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.exception import BotoClientError
 from boto.compat import six
+from boto.ec2.export_task import ExportTask, ExportVolumeTask
+from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 
 #boto.set_stream_logger('ec2')
 
@@ -84,7 +91,8 @@ class EC2Connection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True, profile_name=None):
+                 validate_certs=True, profile_name=None,
+                 aws_sudo_id=None):
         """
         Init method to create a new connection to EC2.
         """
@@ -103,9 +111,17 @@ class EC2Connection(AWSQueryConnection):
                                             profile_name=profile_name)
         if api_version:
             self.APIVersion = api_version
+        self.aws_sudo_id = aws_sudo_id
 
     def _required_auth_capability(self):
         return ['hmac-v4']
+
+    def make_request(self, action, params=None, path='/', verb='GET'):
+        if self.aws_sudo_id:
+            if params is None:
+                params = {}
+            params['AWSSudoId'] = self.aws_sudo_id
+        return AWSQueryConnection.make_request(self, action, params, path, verb)
 
     def get_params(self):
         """
@@ -294,7 +310,7 @@ class EC2Connection(AWSQueryConnection):
             the instances
 
         :type root_device_name: string
-        :param root_device_name: The root device name (e.g. /dev/sdh)
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -304,10 +320,7 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         :type virtualization_type: string
-        :param virtualization_type: The virutalization_type of the image.
-            Valid choices are:
-            * paravirtual
-            * hvm
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
 
         :type sriov_net_support: string
         :param sriov_net_support: Advanced networking support.
@@ -361,16 +374,16 @@ class EC2Connection(AWSQueryConnection):
         image_id = getattr(rs, 'imageId', None)
         return image_id
 
-    def deregister_image(self, image_id, delete_snapshot=False, dry_run=False):
+    def deregister_image(self, image_id, delete_snapshots=False, dry_run=False):
         """
         Unregister an AMI.
 
         :type image_id: string
         :param image_id: the ID of the Image to unregister
 
-        :type delete_snapshot: bool
-        :param delete_snapshot: Set to True if we should delete the
-            snapshot associated with an EBS volume mounted at /dev/sda1
+        :type delete_snapshots: bool
+        :param delete_snapshots: Set to True to delete all snapshots associated
+            with the image
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -378,23 +391,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        snapshot_id = None
-        if delete_snapshot:
-            image = self.get_image(image_id)
-            for key in image.block_device_mapping:
-                if key == "/dev/sda1":
-                    snapshot_id = image.block_device_mapping[key].snapshot_id
-                    break
-        params = {
-            'ImageId': image_id,
-        }
-        if dry_run:
-            params['DryRun'] = 'true'
-        result = self.get_status('DeregisterImage',
-                                 params, verb='POST')
-        if result and snapshot_id:
-            return result and self.delete_snapshot(snapshot_id)
-        return result
+        return self.get_status('DeregisterImage',
+                               {'ImageId':image_id,
+                                'DeleteSnapshots':delete_snapshots}, verb='POST')
 
     def create_image(self, instance_id, name,
                      description=None, no_reboot=False,
@@ -474,9 +473,10 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeImageAttribute', params,
                                ImageAttribute, verb='POST')
 
-    def modify_image_attribute(self, image_id, attribute='launchPermission',
+    def modify_image_attribute(self, image_id, attribute=None,
                                operation='add', user_ids=None, groups=None,
-                               product_codes=None, dry_run=False):
+                               product_codes=None, dry_run=False,
+                               description=None):
         """
         Changes an attribute of an image.
 
@@ -504,14 +504,21 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type description: string
+        :param description: Description of the image
         """
-        params = {'ImageId': image_id,
-                  'Attribute': attribute,
-                  'OperationType': operation}
+        params = {'ImageId': image_id}
+
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
+        if description:
+             params['Description.Value'] = description
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+            for i,user_id in enumerate(user_ids):
+                params['LaunchPermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+            for i,group in enumerate(groups):
+                params['LaunchPermission.%s.%d.Group' % (operation.title(),i+1)] = group
         if product_codes:
             self.build_list_params(params, product_codes, 'ProductCode')
         if dry_run:
@@ -750,7 +757,11 @@ class EC2Connection(AWSQueryConnection):
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
                       ebs_optimized=False, network_interfaces=None,
-                      dry_run=False):
+                      dry_run=False,
+                      high_available=None,
+                      root_device_name=None, public_addressing=None,
+                      virtualization_type=None, description=None,
+                      private_dns_name=None):
         """
         Runs an image on EC2.
 
@@ -903,6 +914,21 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type high_available: bool
+        :param high_available: Turn on high availability option for the instances.
+
+        :type root_device_name: string
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
+
+        :type public_addressing: bool
+        :param public_addressing: Assign elastic IPs to the instances if available.
+
+        :type virtualization_type: string
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
+
+        :type description: string
+        :param description: Instance description.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -973,6 +999,18 @@ class EC2Connection(AWSQueryConnection):
             network_interfaces.build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
+        if high_available is not None:
+            params['HighAvailable'] = 'true' if high_available else 'false'
+        if root_device_name:
+            params['RootDeviceName'] = root_device_name
+        if public_addressing is not None:
+            params['AddressingType'] = 'public' if public_addressing else 'private'
+        if virtualization_type:
+            params['VirtualizationType'] = virtualization_type
+        if description:
+            params['Description'] = description
+        if private_dns_name:
+            params['PrivateDnsName'] = private_dns_name
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -1061,7 +1099,8 @@ class EC2Connection(AWSQueryConnection):
         self.build_list_params(params, [instance_id], 'InstanceId')
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_object('GetConsoleOutput', params,
+        return self.get_object('GetConsoleOutput',
+                               {'InstanceId':instance_id},
                                ConsoleOutput, verb='POST')
 
     def reboot_instances(self, instance_ids=None, dry_run=False):
@@ -1123,6 +1162,7 @@ class EC2Connection(AWSQueryConnection):
             * groupSet
             * ebsOptimized
             * sriovNetSupport
+            * description
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1890,7 +1930,8 @@ class EC2Connection(AWSQueryConnection):
     def _associate_address(self, status, instance_id=None, public_ip=None,
                            allocation_id=None, network_interface_id=None,
                            private_ip_address=None, allow_reassociation=False,
-                           dry_run=False):
+                           dry_run=False,
+                           private_ip_address_id=None):
         params = {}
         if instance_id is not None:
                 params['InstanceId'] = instance_id
@@ -1909,6 +1950,9 @@ class EC2Connection(AWSQueryConnection):
         if allow_reassociation:
             params['AllowReassociation'] = 'true'
 
+        elif private_ip_address_id is not None:
+                params['PrivateIpAddressId'] = private_ip_address_id
+
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -1921,7 +1965,8 @@ class EC2Connection(AWSQueryConnection):
     def associate_address(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
                           private_ip_address=None, allow_reassociation=False,
-                          dry_run=False):
+                          dry_run=False,
+                          private_ip_address_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1956,6 +2001,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
+
+        :type private_ip_address_id: string
+        :param private_ip_address_id: The private IP address ID to which
+            elastic IP is to be assigned to
 
         :rtype: bool
         :return: True if successful
@@ -1964,12 +2013,14 @@ class EC2Connection(AWSQueryConnection):
             public_ip=public_ip, allocation_id=allocation_id,
             network_interface_id=network_interface_id,
             private_ip_address=private_ip_address,
+            private_ip_address_id=private_ip_address_id,
             allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def associate_address_object(self, instance_id=None, public_ip=None,
                                  allocation_id=None, network_interface_id=None,
                                  private_ip_address=None, allow_reassociation=False,
-                                 dry_run=False):
+                                 dry_run=False,
+                                 private_ip_address_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -2005,6 +2056,10 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type private_ip_address_id: string
+        :param private_ip_address_id: The private IP address ID to which
+            elastic IP is to be assigned to
+
         :rtype: class:`boto.ec2.address.Address`
         :return: The associated address instance
         """
@@ -2012,6 +2067,7 @@ class EC2Connection(AWSQueryConnection):
             public_ip=public_ip, allocation_id=allocation_id,
             network_interface_id=network_interface_id,
             private_ip_address=private_ip_address,
+            private_ip_address_id=private_ip_address_id,
             allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def disassociate_address(self, public_ip=None, association_id=None,
@@ -2267,8 +2323,8 @@ class EC2Connection(AWSQueryConnection):
 
         """
         params = {'VolumeId': volume_id}
-        if attribute == 'AutoEnableIO':
-            params['AutoEnableIO.Value'] = new_value
+        if attribute in ('AutoEnableIO', 'Description', 'Size', "Iops"):
+            params[attribute + '.Value'] = new_value
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
@@ -2348,7 +2404,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVolume', params, verb='POST')
 
-    def attach_volume(self, volume_id, instance_id, device, dry_run=False):
+    def attach_volume(self, volume_id, instance_id, device=None, dry_run=False,
+                      attach_type=None):
         """
         Attach an EBS volume to an EC2 instance.
 
@@ -2368,13 +2425,20 @@ class EC2Connection(AWSQueryConnection):
 
         :rtype: bool
         :return: True if successful
+
+        :rtype: class: `boto.ec2.volume.AttachmentSet`
+        :return: Attribute status of returned object will be 'attached'
+                 in case of success
         """
         params = {'InstanceId': instance_id,
-                  'VolumeId': volume_id,
-                  'Device': device}
+                  'VolumeId': volume_id}
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_status('AttachVolume', params, verb='POST')
+        if device is not None:
+            params['Device'] = device
+        if attach_type is not None:
+            params['AttachType'] = attach_type
+        return self.get_object('AttachVolume', params, AttachmentSet, verb='POST')
 
     def detach_volume(self, volume_id, instance_id=None,
                       device=None, force=False, dry_run=False):
@@ -2405,8 +2469,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
-        :rtype: bool
-        :return: True if successful
+        :rtype: class: `boto.ec2.volume.AttachmentSet`
+        :return: Attribute status of returned object will be 'detached'
+                 in case of success
         """
         params = {'VolumeId': volume_id}
         if instance_id:
@@ -2417,7 +2482,7 @@ class EC2Connection(AWSQueryConnection):
             params['Force'] = 'true'
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_status('DetachVolume', params, verb='POST')
+        return self.get_object('DetachVolume', params, AttachmentSet, verb='POST')
 
     # Snapshot methods
 
@@ -2465,8 +2530,12 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
 
         if owner:
+            if not isinstance(owner, list):
+                owner=[owner]
             self.build_list_params(params, owner, 'Owner')
         if restorable_by:
+            if not isinstance(restorable_by, list):
+                restorable_by=[restorable_by]
             self.build_list_params(params, restorable_by, 'RestorableBy')
         if filters:
             self.build_filter_params(params, filters)
@@ -2480,7 +2549,8 @@ class EC2Connection(AWSQueryConnection):
         Create a snapshot of an existing EBS Volume.
 
         :type volume_id: str
-        :param volume_id: The ID of the volume to be snapshot'ed
+        :param volume_id: The ID of the volume or path to the file in S3 to be
+                          snapshot'ed.
 
         :type description: str
         :param description: A description of the snapshot.
@@ -2499,10 +2569,6 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
-        volume = self.get_all_volumes([volume_id], dry_run=dry_run)[0]
-        volume_name = volume.tags.get('Name')
-        if volume_name:
-            snapshot.add_tag('Name', volume_name)
         return snapshot
 
     def delete_snapshot(self, snapshot_id, dry_run=False):
@@ -2738,9 +2804,9 @@ class EC2Connection(AWSQueryConnection):
                                SnapshotAttribute, verb='POST')
 
     def modify_snapshot_attribute(self, snapshot_id,
-                                  attribute='createVolumePermission',
                                   operation='add', user_ids=None, groups=None,
-                                  dry_run=False):
+                                  dry_run=False,
+                                  attribute=None, description=None):
         """
         Changes an attribute of an image.
 
@@ -2766,13 +2832,18 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         """
-        params = {'SnapshotId': snapshot_id,
-                  'Attribute': attribute,
-                  'OperationType': operation}
+        params = {'SnapshotId' : snapshot_id}
+
+        if description:
+             params['Description.Value'] = description
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+             for i,user_id in enumerate(user_ids):
+                 params['CreateVolumePermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+             for i,group in enumerate(groups):
+                 params['CreateVolumePermission.%s.%d.Group' % (operation.title(),i+1)] = group
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifySnapshotAttribute', params, verb='POST')
@@ -2983,7 +3054,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)], verb='POST')
 
-    def create_security_group(self, name, description, vpc_id=None,
+    def create_security_group(self, name, description, group_type=None,
                               dry_run=False):
         """
         Create a new security group for your account.
@@ -2996,9 +3067,8 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: The description of the new security group
 
-        :type vpc_id: string
-        :param vpc_id: The ID of the VPC to create the security group in,
-                       if any.
+        :type group_type: string
+        :param group_type: Security group type (interconnect|vpc)
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -3009,9 +3079,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName': name,
                   'GroupDescription': description}
 
-        if vpc_id is not None:
-            params['VpcId'] = vpc_id
-
+        if group_type is not None:
+            params['GroupType'] = group_type
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -3019,8 +3088,6 @@ class EC2Connection(AWSQueryConnection):
                                 SecurityGroup, verb='POST')
         group.name = name
         group.description = description
-        if vpc_id is not None:
-            group.vpc_id = vpc_id
         return group
 
     def delete_security_group(self, name=None, group_id=None, dry_run=False):
@@ -4432,13 +4499,16 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('CopyImage', params, CopyImage,
                                verb='POST')
 
-    def describe_account_attributes(self, attribute_names=None, dry_run=False):
+    def describe_account_attributes(self, attribute_names=None, dry_run=False,
+                                    availability_zone=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
         """
         params = {}
+        if availability_zone:
+            params["AvailabilityZone"] = availability_zone
         if attribute_names is not None:
             self.build_list_params(params, attribute_names, 'AttributeName')
         if dry_run:
@@ -4463,7 +4533,8 @@ class EC2Connection(AWSQueryConnection):
                                VPCAttribute, verb='POST')
 
     def modify_vpc_attribute(self, vpc_id, enable_dns_support=None,
-                             enable_dns_hostnames=None, dry_run=False):
+                             enable_dns_hostnames=None, dry_run=False,
+                             description=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -4478,6 +4549,8 @@ class EC2Connection(AWSQueryConnection):
         if enable_dns_hostnames is not None:
             params['EnableDnsHostnames.Value'] = (
                 'true' if enable_dns_hostnames else 'false')
+        if description is not None:
+            params['Description.Value'] = description
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVpcAttribute', params, verb='POST')
@@ -4525,3 +4598,489 @@ class EC2Connection(AWSQueryConnection):
             params['NextToken'] = next_token
         return self.get_list('DescribeClassicLinkInstances', params,
                              [('item', Instance)], verb='POST')
+
+    # C2 specific methods
+
+    # Instances
+
+    def attach_virtual_network(self, instance_id, network_id):
+        """
+        Attach virtual network to (stopped) instance.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type network_id: string
+        :param network_id: The ID of the virtual network to be attached
+        """
+        params = {'InstanceId' : instance_id,
+                  'NetworkId' : network_id}
+        return self.get_status('AttachVirtualNetwork', params, verb='POST')
+
+    def detach_virtual_network(self, instance_id, network_id):
+        """
+        Detach virtual network from (stopped) instance.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type network_id: string
+        :param network_id: The ID of the virtual network to be detached
+        """
+
+        params = {'InstanceId': instance_id,
+                  'NetworkId': network_id}
+        return self.get_status('DetachVirtualNetwork', params, verb='POST')
+
+    def suspend_instances(self, instance_ids):
+        """
+        Suspend the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to suspend
+
+        :rtype: list
+        :return: A list of the instances suspended
+        """
+
+        params = {}
+        self.build_list_params(params, instance_ids, 'InstanceId')
+
+        return self.get_list('SuspendInstances', params, [('item', Instance)], verb='POST')
+
+    # External networks
+
+    def attach_extnetwork(self, network_name, group_name):
+        """Attach an external network.
+
+        :type network_name: string
+        :param network_name: The name of the external network.
+
+        :type group_name: string
+        :param group_name: The name of the security group.
+        """
+        params = {'ExtNetName' : network_name,
+                  'GroupName': group_name}
+        return self.get_status('AttachExtNetwork', params, verb='POST')
+
+    def get_all_extnetworks(self):
+        """Get all available external networks."""
+        return self.get_list('DescribeExtNetworks', {}, [( 'item', ExtNetwork )], verb='POST')
+
+    def detach_extnetwork(self, network_name):
+        """Detach an external network.
+
+        :type network_name: string
+        :param network_name: The name of the external network.
+        """
+        params = {'ExtNetName' : network_name}
+        return self.get_status('DetachExtNetwork', params, verb='POST')
+
+    # Private IP methods
+
+    def get_all_private_ips(self, private_ip_address_ids=None, filters=None):
+        """
+        Get all Private IP Addresses.
+
+        :type private_ip_address_ids: list
+        :param private_ip_address_ids: Optional list of private IP address IDs.
+                                       If this list is present, only the
+                                       private IP addresses with these IDs will
+                                       be returned.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
+        :rtype: list of :class:`boto.ec2.private_ip.PrivateIP`
+        :return: The requested PrivateIp objects
+        """
+        params = {}
+        if private_ip_address_ids:
+            self.build_list_params(params, private_ip_address_ids, 'PrivateIpAddressId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribePrivateIpAddresses', params, [('item', PrivateIP)], verb='POST')
+
+    def allocate_private_ip(self, security_group, private_ip_address=None, availability_zone=None):
+        """
+        Allocate Private IP in specified Security Group.
+
+        :type security_group: string
+        :param security_group: The name of the security group in which to
+                                allocate private IP address
+
+        :type private_ip_address: string
+        :param private_ip_address: You can optionally use this parameter to
+                                   allocate a specific available IP address
+                                   (e.g., 10.0.0.25).
+
+        :type availability_zone: string
+        :param availability_zone: The availability zone in which pivate IP
+                                  address should be allocated
+
+        :rtype: :class:`boto.ec2.private_ip.PrivateIP`
+        :return: The newly allocated Private IP Address
+        """
+        params = {}
+        if isinstance(security_group, SecurityGroup):
+            params['SecurityGroup'] = security_group.name
+        else:
+            params['SecurityGroup'] = security_group
+        if private_ip_address is not None:
+            params['PrivateIpAddress'] = private_ip_address
+        if availability_zone is not None:
+            params['AvailabilityZone'] = availability_zone
+        return self.get_object('AllocatePrivateIpAddress', params, PrivateIP, verb='POST')
+
+    def delete_private_ip_address(self, private_ip_address_id):
+        """
+        Delete Private IP Address.
+
+        :type private_ip_address_id: string
+        :param private_ip_address_id: The ID of the private IP address to be deleted.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'PrivateAddressId': private_ip_address_id}
+        return self.get_status('DeletePrivateIpAddress', params, verb='POST')
+
+    # Import/Export
+
+    def build_dict_list_params(self, params, items, label):
+        if isinstance(items, str):
+            items = [items]
+        for i, item in enumerate(items, 1):
+            if isinstance(item, dict):
+                for key, value in self._flatten_dict(item):
+                    params['%s.%d.%s' % (label, i, key)] = value
+            else:
+                params['%s.%d' % (label, i)] = item
+
+    @staticmethod
+    def _flatten_dict(d):
+        def traverse_dict(dct, base_keys=None):
+            if base_keys is None:
+                base_keys = []
+            if isinstance(dct, dict):
+                for key, value in dct.items():
+                    for path, val in traverse_dict(value, base_keys + [key]):
+                        yield path, val
+            else:
+                yield base_keys, dct
+
+        return [(".".join(keys), value) for keys, value in traverse_dict(d)]
+
+    def import_image(self, disk_containers, description=None,
+                     architecture=None, platform=None,
+                     notify=False, email=None):
+        """
+        Create import image tasks.
+
+        :type disk_containers: list
+        :param disk_containers: list of disk containers, format
+                                ``[{"Format": "RAW", "UserBucket": {"S3Bucket": "bucket", "S3Key": "key"}}]``
+
+        :type description: string
+        :param description: Image description
+
+        :type architecture: string
+        :param architecture: The architecture of the virtual machine. Valid values: i386 | x86_64
+
+        :type platform: string
+        :param platform: The operating system of the virtual machine. Valid values: Windows | Linux
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.import_task.ImportImageTask`
+        :return: An instance of ImportImageTask.
+        """
+        params = {}
+        self.build_dict_list_params(params, disk_containers, 'DiskContainer')
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
+
+    def import_snapshot(self, bucket, key, disk_format=None, url=None, description=None,
+                        notify=False, email=None):
+        """
+        Create import snapshot task.
+
+        :type bucket: string
+        :param bucket: The name of the S3 bucket where the disk image is located.
+
+        :type key: string
+        :param key: The key for the disk image.
+
+        :type disk_format: string
+        :param disk_format: The format of the disk image being imported.
+
+        :type url: string
+        :param url: The URL to the Amazon S3-based disk image being imported
+
+        :type description: string
+        :param description: Snapshot description
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.import_task.ImportSnapshotTask`
+        :return: An instance of ImportSnapshotTask.
+        """
+        params = {
+            'DiskContainer.Format': disk_format or '',
+            'DiskContainer.Url': url or '',
+            'DiskContainer.UserBucket.S3Bucket': bucket,
+            'DiskContainer.UserBucket.S3Key': key,
+        }
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportSnapshot', params, ImportSnapshotTask, verb='POST')
+
+    def describe_import_snapshot_tasks(self, import_task_ids=None, filters=None):
+        """
+        Returns information about import snapshot tasks.
+
+        :type import_task_ids: list
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ImportSnapshotTask
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportSnapshotTasks', params,
+                             [('item', ImportSnapshotTask)], verb='POST')
+
+    def cancel_import_task(self, import_task_id, cancel_reason=None):
+        """
+        Cancel import task.
+
+        :type import_task_id: string
+        :param import_task_id: Task ID
+
+        :type import_task_id: string
+        :param cancel_reason: Cancel reason (optional)
+
+        :rtype: class:`boto.ec2.instance.Reservation`
+        :return: An instance of Reservation
+        """
+        params = {'ImportTaskId': import_task_id}
+        if cancel_reason:
+            params['CancelReason'] = cancel_reason
+        return self.get_object('CancelImportTask', params, Reservation, verb='POST')
+
+    def describe_import_image_tasks(self, import_task_ids=None, filters=None):
+        """
+        Return information about import image tasks.
+
+        :type import_task_ids: list
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ImportImageTask
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportImageTasks', params,
+                             [('item', ImportImageTask)], verb='POST')
+
+    def create_instance_export_task(self, instance_id, s3_bucket, s3_prefix=None, description=None,
+                                    target_environment=None, container_format="OVA", disk_image_format="VMDK",
+                                    notify=False, email=None):
+        """
+        Create instance export task.
+
+        :type instance_id: string
+        :param instance_id: The ID of the instance.
+
+        :type s3_bucket: string
+        :param s3_bucket: The S3 bucket for the destination image.
+
+        :type s3_prefix: string
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+
+        :type description: string
+        :param description: A description for the conversion task or the resource being exported.
+
+        :type target_environment: string
+        :param target_environment: The target virtualization environment.
+
+        :type container_format: string
+        :param container_format: The container format used to combine disk images
+
+        :type disk_image_format: string
+        :param disk_image_format: The format for the exported image.
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.export_task.ExportTask`
+        :return: An instance of ExportTask`
+        """
+        params = {
+            'InstanceId': instance_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if container_format:
+            params['ExportToS3.ContainerFormat'] = container_format
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if target_environment:
+            params['TargetEnvironment'] = target_environment
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateInstanceExportTask', params, ExportTask, verb='POST')
+
+    def describe_export_tasks(self, export_task_ids):
+        """
+        Return information about export instance tasks.
+
+        :type export_task_ids: list
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ExportTask
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportTasks', params,
+                             [('item', ExportTask)], verb='GET')
+
+    def cancel_export_task(self, export_task_id):
+        """
+        Cancel export task.
+
+        :type export_task_id: string
+        :param export_task_id: Task ID
+
+        :rtype: class:`boto.resultset.BooleanResult`
+        :return: An instance of BooleanResult
+        """
+        params = {'ExportTaskId': export_task_id}
+        return self.get_object('CancelExportTask', params, BooleanResult, verb='POST')
+
+    # Custom method for changing task priority
+
+    def modify_task_priority(self, task_id, priority):
+        """
+        Modify task priority.
+
+        :type task_id: string
+        :param task_id: Task ID
+
+        :type priority: int
+        :param priority: Priority (-1, 0, 1)
+
+        :rtype: class:`boto.resultset.BooleanResult`
+        :return: An instance of BooleanResult
+        """
+        params = {'TaskId': task_id, 'Priority': priority}
+        return self.get_object('ModifyTaskPriority', params, BooleanResult, verb='POST')
+
+    # Custom volume export methods
+
+    def create_volume_export_task(self, volume_id, s3_bucket, s3_prefix=None, description=None,
+                                  disk_image_format=None, notify=False, email=None):
+        """
+        Create instance export task.
+
+        :type volume_id: string
+        :param volume_id: The ID of the volume.
+
+        :type s3_bucket: string
+        :param s3_bucket: The S3 bucket for the destination image.
+
+        :type s3_prefix: string
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+
+        :type description: string
+        :param description: A description for the conversion task or the resource being exported.
+
+        :type disk_image_format: string
+        :param disk_image_format: The format for the exported image.
+
+        :type notify: bool
+        :param notify: (custom) Notify about task statuses by email
+
+        :type email: string
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+
+        :rtype: class:`boto.ec2.export_task.ExporVolumeTask`
+        :return: An instance of ExportVolumeTask
+        """
+        params = {
+            'VolumeId': volume_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateVolumeExportTask', params, ExportVolumeTask, verb='POST')
+
+    def describe_export_volume_tasks(self, export_task_ids):
+        """
+        Return information about export volume tasks.
+
+        :type export_task_ids: list
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+
+        :rtype: list
+        :return: A list of instances ExportVolumeTask
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportVolumeTasks', params,
+                             [('item', ExportVolumeTask)], verb='GET')

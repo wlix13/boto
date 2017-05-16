@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2017 CROC Incorporated, http://cloud.croc.ru/en/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,50 +19,51 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Represents a Subnet
-"""
 
-from boto.ec2.ec2object import TaggedEC2Object
-from boto.ec2.securitygroup import IPPermissionsList
+from boto.ec2.address import Address
+from boto.ec2.ec2object import EC2Object
 
-class Subnet(TaggedEC2Object):
+
+class PrivateIP(EC2Object):
+    """
+    Represents an EC2 Private IP Address.
+    """
 
     def __init__(self, connection=None):
-        super(Subnet, self).__init__(connection)
+        super(PrivateIP, self).__init__(connection)
         self.id = None
-        self.vpc_id = None
+        self.group_name = None
         self.state = None
-        self.cidr_block = None
-        self.available_ip_address_count = 0
         self.availability_zone = None
-        self.rules = IPPermissionsList()
+        self.private_ip_address = None
+        self.ip_address = None
+        self.public_dns_name = None
 
     def __repr__(self):
-        return 'Subnet:%s' % self.id
-
-    def startElement(self, name, attrs, connection):
-        retval = super(Subnet, self).startElement(name, attrs, connection)
-        if retval is not None:
-            return retval
-        if name == 'ipPermissions':
-            return self.rules
-        else:
-            return None
+        return 'Address:%s' % self.id
 
     def endElement(self, name, value, connection):
-        if name == 'subnetId':
+        if name == 'privateIpAddressId':
             self.id = value
-        elif name == 'vpcId':
-            self.vpc_id = value
+        elif name == 'groupName':
+            self.group_name = value
         elif name == 'state':
             self.state = value
-        elif name == 'cidrBlock':
-            self.cidr_block = value
-        elif name == 'availableIpAddressCount':
-            self.available_ip_address_count = int(value)
         elif name == 'availabilityZone':
             self.availability_zone = value
+        elif name == 'privateIpAddress':
+            self.private_ip_address = value
+        elif name == 'ipAddress':
+            self.ip_address = value
+        elif name == 'dnsName':
+            self.public_dns_name = value
         else:
             setattr(self, name, value)
 
+    def use_ip(self, ip_address):
+        if isinstance(ip_address, Address):
+            ip_address = ip_address.public_ip
+        return self.connection.associate_address(private_ip_address_id=self.id, public_ip=ip_address)
+
+    def delete(self):
+        return self.connection.delete_private_ip_address(self.id)
