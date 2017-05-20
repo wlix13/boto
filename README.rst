@@ -5,11 +5,8 @@ boto 2.46.1
 
 Released: 20-Feb-2017
 
-.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
+.. image:: https://travis-ci.org/c2devel/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
-
-.. image:: https://pypip.in/d/boto/badge.svg
-        :target: https://pypi.python.org/pypi/boto/
 
 ******
 Boto 3
