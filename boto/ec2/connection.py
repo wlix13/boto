@@ -1929,7 +1929,7 @@ class EC2Connection(AWSQueryConnection):
 
     def _associate_address(self, status, instance_id=None, public_ip=None,
                            allocation_id=None, network_interface_id=None,
-                           private_ip_address=None, allow_reassociation=False,
+                           private_ip_address=None, allow_reassociation=None,
                            dry_run=False,
                            private_ip_address_id=None):
         params = {}
@@ -1947,10 +1947,10 @@ class EC2Connection(AWSQueryConnection):
         if private_ip_address is not None:
             params['PrivateIpAddress'] = private_ip_address
 
-        if allow_reassociation:
-            params['AllowReassociation'] = 'true'
+        if allow_reassociation is not None:
+            params['AllowReassociation'] = allow_reassociation
 
-        elif private_ip_address_id is not None:
+        if private_ip_address_id is not None:
                 params['PrivateIpAddressId'] = private_ip_address_id
 
         if dry_run:
@@ -1964,7 +1964,7 @@ class EC2Connection(AWSQueryConnection):
 
     def associate_address(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
-                          private_ip_address=None, allow_reassociation=False,
+                          private_ip_address=None, allow_reassociation=None,
                           dry_run=False,
                           private_ip_address_id=None):
         """
@@ -2018,7 +2018,7 @@ class EC2Connection(AWSQueryConnection):
 
     def associate_address_object(self, instance_id=None, public_ip=None,
                                  allocation_id=None, network_interface_id=None,
-                                 private_ip_address=None, allow_reassociation=False,
+                                 private_ip_address=None, allow_reassociation=None,
                                  dry_run=False,
                                  private_ip_address_id=None):
         """

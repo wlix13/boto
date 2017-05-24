@@ -93,7 +93,7 @@ class Address(EC2Object):
 
     delete = release
 
-    def associate(self, instance_id=None, network_interface_id=None, private_ip_address=None, allow_reassociation=False, dry_run=False):
+    def associate(self, instance_id=None, network_interface_id=None, private_ip_address=None, allow_reassociation=None, dry_run=False):
         """
         Associate this Elastic IP address with a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
