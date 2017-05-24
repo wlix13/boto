@@ -36,6 +36,13 @@ except ImportError:
     from base64 import encodestring as encodebytes
 
 
+# Use third party ordereddict for older versions of Python
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
+
 # If running in Google App Engine there is no "user" and
 # os.path.expanduser() will fail. Attempt to detect this case and use a
 # no-op expanduser function in this case.
