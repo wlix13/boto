@@ -34,7 +34,7 @@ class AddressTest(unittest.TestCase):
         self.address.connection.associate_address.assert_called_with(
             instance_id=1,
             public_ip="192.168.1.1",
-            allow_reassociation=False,
+            allow_reassociation=None,
             network_interface_id=None,
             private_ip_address=None,
             dry_run=False
@@ -83,7 +83,7 @@ class AddressWithAllocationTest(unittest.TestCase):
             allocation_id="aid1",
             network_interface_id=None,
             private_ip_address=None,
-            allow_reassociation=False,
+            allow_reassociation=None,
             dry_run=False
         )
 
@@ -130,7 +130,7 @@ class AddressWithNetworkInterfaceTest(unittest.TestCase):
             network_interface_id=1,
             private_ip_address=None,
             allocation_id="aid1",
-            allow_reassociation=False,
+            allow_reassociation=None,
             dry_run=False
         )
 
