@@ -56,6 +56,9 @@ BuildRequires:  python3-requests
 BuildArch:      noarch
 
 Requires:       python-requests
+%if 0%{?el6}
+Requires:       python-ordereddict
+%endif
 Obsoletes:      python-boto <= 1441065600:2.12.0-CROC8
 
 %description
