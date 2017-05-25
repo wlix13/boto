@@ -40,7 +40,10 @@ except ImportError:
 try:
     from collections import OrderedDict
 except ImportError:
-    from ordereddict import OrderedDict
+    try:
+        from ordereddict import OrderedDict
+    except ImportError:
+        OrderedDict = dict
 
 
 # If running in Google App Engine there is no "user" and
