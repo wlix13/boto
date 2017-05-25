@@ -21,6 +21,8 @@
 # IN THE SOFTWARE.
 #
 
+from boto.compat import OrderedDict
+
 
 class BlockDeviceType(object):
     """
@@ -102,7 +104,7 @@ class BlockDeviceType(object):
 EBSBlockDeviceType = BlockDeviceType
 
 
-class BlockDeviceMapping(dict):
+class BlockDeviceMapping(OrderedDict):
     """
     Represents a collection of BlockDeviceTypes when creating ec2 instances.
 
@@ -119,7 +121,7 @@ class BlockDeviceMapping(dict):
         :type connection: :class:`boto.ec2.EC2Connection`
         :param connection: Optional connection.
         """
-        dict.__init__(self)
+        super(BlockDeviceMapping, self).__init__()
         self.connection = connection
         self.current_name = None
         self.current_value = None

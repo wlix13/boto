@@ -108,10 +108,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         dev_sdf = BlockDeviceType(snapshot_id='snap-12345')
         dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=True, encrypted=True)
 
-        class OrderedBlockDeviceMapping(OrderedDict, BlockDeviceMapping):
-            pass
-
-        bdm = OrderedBlockDeviceMapping()
+        bdm = BlockDeviceMapping()
         bdm.update(OrderedDict((('/dev/sdf', dev_sdf), ('/dev/sdg', dev_sdg))))
 
         response = self.service_connection.run_instances(
