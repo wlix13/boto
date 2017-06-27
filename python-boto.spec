@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC2%{?buildid}%{?dist}
+Release:        CROC3%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Tue Jun 27 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC3
+- ec2: fix 'AllowReassociation' param according to AWS API
+- ec2: fix tests for addresses.associate
+
 * Fri May 26 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC2
 - ec2: preserved blockdevicemapping order
 - rpm: added ordereddict requires on legacy platforms
