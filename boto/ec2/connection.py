@@ -762,7 +762,7 @@ class EC2Connection(AWSQueryConnection):
                       high_available=None,
                       root_device_name=None, public_addressing=None,
                       virtualization_type=None, description=None,
-                      private_dns_name=None):
+                      private_dns_name=None, switch_ids=None):
         """
         Runs an image on EC2.
 
@@ -930,6 +930,9 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: Instance description.
 
+        :type switch_ids: list
+        :param switch_ids: list of virtual switch IDs
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -1012,6 +1015,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if private_dns_name:
             params['PrivateDnsName'] = private_dns_name
+        if switch_ids:
+            self.build_list_params(params, switch_ids, 'SwitchId')
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 

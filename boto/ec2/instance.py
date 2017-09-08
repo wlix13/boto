@@ -32,6 +32,7 @@ from boto.ec2.blockdevicemapping import BlockDeviceMapping
 from boto.ec2.image import ProductCodes
 from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.group import Group
+from boto.ec2.virtualswitch import VirtualSwitch
 import base64
 
 
@@ -161,6 +162,7 @@ class Instance(TaggedEC2Object):
     :ivar id: The unique ID of the Instance.
     :ivar groups: A list of Group objects representing the security
                   groups associated with the instance.
+    :ivar switches: A list of VirtualSwitch objects.
     :ivar public_dns_name: The public dns name of the instance.
     :ivar private_dns_name: The private dns name of the instance.
     :ivar state: The string representation of the instance's current state.
@@ -245,6 +247,7 @@ class Instance(TaggedEC2Object):
         self.client_token = None
         self.eventsSet = None
         self.groups = []
+        self.switches = []
         self.platform = None
         self.interfaces = []
         self.hypervisor = None
@@ -311,6 +314,9 @@ class Instance(TaggedEC2Object):
         elif name == 'groupSet':
             self.groups = ResultSet([('item', Group)])
             return self.groups
+        elif name == 'switchesSet':
+            self.switches = ResultSet([('item', VirtualSwitch)])
+            return self.switches
         elif name == "eventsSet":
             self.eventsSet = SubParse('eventsSet')
             return self.eventsSet
