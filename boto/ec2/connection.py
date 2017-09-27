@@ -1850,7 +1850,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
 
-    def allocate_address(self, domain=None, dry_run=False):
+    def allocate_address(self, domain=None, address=None, dry_run=False):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
@@ -1858,6 +1858,9 @@ class EC2Connection(AWSQueryConnection):
         :param domain: Optional string. If domain is set to "vpc" the address
             will be allocated to VPC . Will return address object with
             allocation_id.
+
+        :type address: string
+        :param address: The Elastic IP address to recover.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1869,6 +1872,9 @@ class EC2Connection(AWSQueryConnection):
 
         if domain is not None:
             params['Domain'] = domain
+
+        if address is not None:
+            params['Address'] = address
 
         if dry_run:
             params['DryRun'] = 'true'
