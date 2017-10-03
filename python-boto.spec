@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC3%{?buildid}%{?dist}
+Release:        CROC4%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,11 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Tue Oct 03 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC4
+- Add address parameter to address allocation
+- ec2: remove 'attach_type' from blockdevicemapping
+- ec2: remove 'attach_type' argument from attach volume method
+
 * Tue Jun 27 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC3
 - ec2: fix 'AllowReassociation' param according to AWS API
 - ec2: fix tests for addresses.associate
