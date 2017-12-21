@@ -12,6 +12,7 @@ DESCRIBE_VIRTUAL_SWITCH = br"""
         <item>
             <switchId>sw-XXXXXXXX</switchId>
             <switchName>switch-name</switchName>
+            <availabilityZone>az0</availabilityZone>
         </item>
     </virtualSwitchInfo>
     <requestId>7cd01b5e-b105-46ec-a9d5-6d2dee1910f3</requestId>
@@ -31,6 +32,7 @@ class TestDescribeVolumeSwitches(AWSMockServiceTestCase):
         self.assertEqual(1, len(switches))
         self.assertEqual('sw-XXXXXXXX', switches[0].id)
         self.assertEqual('switch-name', switches[0].name)
+        self.assertEqual('az0', switches[0].availability_zone)
 
 
 if __name__ == '__main__':
