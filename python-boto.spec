@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC4%{?buildid}%{?dist}
+Release:        CROC5%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Tue Dec 26 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC5
+- Freeze max versions for paramiko and cryptography
+- boto: dont decode bytes string in PY2 when parse error message
+
 * Tue Oct 03 2017 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC4
 - Add address parameter to address allocation
 - ec2: remove 'attach_type' from blockdevicemapping
