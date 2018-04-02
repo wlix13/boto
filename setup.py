@@ -43,7 +43,7 @@ if sys.version_info <= (2, 5):
 
 extra["install_requires"] = []
 if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
-    extra["install_requires"].append("ordereddict==1.1")
+    extra["install_requires"].append("ordereddict>=1.1")
 
 def readme():
     with open("README.rst") as f:
