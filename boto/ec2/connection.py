@@ -1323,6 +1323,35 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
+    def modify_instance_placement(self, instance_id, group_name=None, dry_run=False):
+        """
+        Changes the placement of an instance.
+
+        :type instance_id: string
+        :param instance_id: The id of the instance you wish to move.
+
+        :type group_name: string
+        :param attribute: The name of a Placement Group you wish to move instance to.
+            If parameter is not set, the instance is removed from its current Placement Group.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+
+        params = {
+            'InstanceId': instance_id,
+        }
+
+        if group_name is not None:
+            params.update({
+                "GroupName": group_name
+            })
+
+        return self.get_status('ModifyInstancePlacement', params, verb='POST')
+
     def reset_instance_attribute(self, instance_id, attribute, dry_run=False):
         """
         Resets an attribute of an instance to its default value.
