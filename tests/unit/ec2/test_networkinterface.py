@@ -22,12 +22,14 @@
 #
 
 from tests.compat import mock, unittest
+from tests.unit import AWSMockServiceTestCase
 
 from boto.exception import BotoClientError
+from boto.ec2 import EC2Connection
 from boto.ec2.networkinterface import NetworkInterfaceCollection
 from boto.ec2.networkinterface import NetworkInterfaceSpecification
 from boto.ec2.networkinterface import PrivateIPAddress
-from boto.ec2.networkinterface import Attachment, NetworkInterface
+from boto.ec2.networkinterface import Association, Attachment, NetworkInterface
 
 
 class NetworkInterfaceTests(unittest.TestCase):
@@ -277,6 +279,98 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'LaunchSpecification.NetworkInterface.0.SecurityGroupId.1':
                 'group_id2',
         })
+
+
+class TestDescribeNetworkInterfaces(AWSMockServiceTestCase):
+    connection_class = EC2Connection
+
+    def default_body(self):
+        return b"""
+            <DescribeNetworkInterfacesResponse xmlns="http://ec2.amazonaws.com/doc/2014-10-01/">
+              <requestId>47c6a494-08a9-47d9-89e3-884bb87a2130</requestId>
+              <networkInterfaceSet>
+                <item>
+                  <networkInterfaceId>eni-5d22cec4</networkInterfaceId>
+                  <subnetId>subnet-e8a8b6b5</subnetId>
+                  <vpcId>vpc-a894d1d3</vpcId>
+                  <availabilityZone>us-east-1a</availabilityZone>
+                  <description>Primary network interface</description>
+                  <status>in-use</status>
+                  <macAddress>0e:bc:c1:69:7d:7a</macAddress>
+                  <privateIpAddress>172.10.10.217</privateIpAddress>
+                  <sourceDestCheck>true</sourceDestCheck>
+                  <attachment>
+                    <attachmentId>eni-attach-e878d8f0</attachmentId>
+                    <instanceId>i-00f2f9ed1bbd6b2a2</instanceId>
+                    <deviceIndex>0</deviceIndex>
+                    <status>attached</status>
+                    <deleteOnTermination>true</deleteOnTermination>
+                  </attachment>
+                  <association>
+                    <publicIp>18.208.84.240</publicIp>
+                    <publicDnsName/>
+                    <allocationId>eipalloc-9e2ad396</allocationId>
+                    <associationId>eipassoc-970f913c</associationId>
+                  </association>
+                  <tagSet/>
+                  <privateIpAddressesSet>
+                    <item>
+                      <privateIpAddress>172.10.10.217</privateIpAddress>
+                      <primary>true</primary>
+                      <association>
+                        <publicIp>18.208.84.240</publicIp>
+                        <publicDnsName/>
+                        <allocationId>eipalloc-9e2ad396</allocationId>
+                        <associationId>eipassoc-970f913c</associationId>
+                      </association>
+                    </item>
+                    <item>
+                      <privateIpAddress>172.10.10.218</privateIpAddress>
+                      <privateDnsName/>
+                      <primary>false</primary>
+                      <association>
+                        <publicIp>18.210.215.25</publicIp>
+                        <publicDnsName/>
+                        <allocationId>eipalloc-e0ded8e8</allocationId>
+                        <associationId>eipassoc-a4005b0f</associationId>
+                      </association>
+                    </item>
+                  </privateIpAddressesSet>
+                </item>
+              </networkInterfaceSet>
+            </DescribeNetworkInterfacesResponse>
+        """
+
+    def test_get_all_route_tables(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.get_all_network_interfaces()
+        self.assertEquals(len(api_response), 1)
+        self.assertIsInstance(api_response[0], NetworkInterface)
+        self.assertIsInstance(api_response[0].association, Association)
+        self.assertEquals(
+            api_response[0].association.allocation_id, "eipalloc-9e2ad396")
+        self.assertEquals(
+            api_response[0].association.id, "eipassoc-970f913c")
+        self.assertEquals(
+            api_response[0].association.public_ip, "18.208.84.240")
+        self.assertEquals(
+            api_response[0].association.allocation_id,
+            api_response[0].private_ip_addresses[0].association.allocation_id)
+        self.assertEquals(
+            api_response[0].association.id,
+            api_response[0].private_ip_addresses[0].association.id)
+        self.assertEquals(
+            api_response[0].association.public_ip,
+            api_response[0].private_ip_addresses[0].association.public_ip)
+        self.assertEquals(
+            api_response[0].private_ip_addresses[1].association.allocation_id,
+            "eipalloc-e0ded8e8")
+        self.assertEquals(
+            api_response[0].private_ip_addresses[1].association.id,
+            "eipassoc-a4005b0f")
+        self.assertEquals(
+            api_response[0].private_ip_addresses[1].association.public_ip,
+            "18.210.215.25")
 
 
 if __name__ == '__main__':

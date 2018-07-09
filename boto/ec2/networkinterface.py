@@ -29,6 +29,44 @@ from boto.resultset import ResultSet
 from boto.ec2.group import Group
 
 
+class Association(object):
+    """
+    :ivar id: The association ID.
+    :ivar allocation_id: The allocation ID.
+    :ivar ip_owner_id: The ID of the Elastic IP address owner.
+    :ivar public_dns_name: The public DNS name.
+    :ivar public_ip: The address of the Elastic IP address
+        bound to the network interface.
+    """
+
+    def __init__(self):
+        self.id = None
+        self.allocation_id = None
+        self.ip_owner_id = None
+        self.public_dns_name = None
+        self.public_ip = None
+
+    def __repr__(self):
+        return 'Association:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'associationId':
+            self.id = value
+        elif name == 'allocationId':
+            self.allocation_id = value
+        elif name == 'ipOwnerId':
+            self.ip_owner_id = value
+        elif name == 'publicDnsName':
+            self.public_dns_name = value
+        elif name == 'publicIp':
+            self.public_ip = value
+        else:
+            setattr(self, name, value)
+
+
 class Attachment(object):
     """
     :ivar id: The ID of the attachment.
@@ -94,6 +132,7 @@ class NetworkInterface(TaggedEC2Object):
     :ivar source_dest_check: Flag to indicate whether to validate
         network traffic to or from this network interface.
     :ivar groups: List of security groups associated with the interface.
+    :ivar association: The association object.
     :ivar attachment: The attachment object.
     :ivar private_ip_addresses: A list of PrivateIPAddress objects.
     """
@@ -113,6 +152,7 @@ class NetworkInterface(TaggedEC2Object):
         self.private_ip_address = None
         self.source_dest_check = None
         self.groups = []
+        self.association = None
         self.attachment = None
         self.private_dns_name = None
         self.private_ip_addresses = []
@@ -130,6 +170,9 @@ class NetworkInterface(TaggedEC2Object):
         elif name == 'attachment':
             self.attachment = Attachment()
             return self.attachment
+        elif name == 'association':
+            self.association = Association()
+            return self.association
         elif name == 'privateIpAddressesSet':
             self.private_ip_addresses = ResultSet([('item', PrivateIPAddress)])
             return self.private_ip_addresses
@@ -245,13 +288,16 @@ class NetworkInterface(TaggedEC2Object):
 
 class PrivateIPAddress(object):
     def __init__(self, connection=None, private_ip_address=None,
-                 primary=None):
+                 association=None, primary=None):
         self.connection = connection
         self.private_ip_address = private_ip_address
         self.primary = primary
+        self.association = association
 
     def startElement(self, name, attrs, connection):
-        pass
+        if name == 'association':
+            self.association = Association()
+            return self.association
 
     def endElement(self, name, value, connection):
         if name == 'privateIpAddress':
