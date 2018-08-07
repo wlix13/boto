@@ -96,7 +96,7 @@ class SecurityGroup(TaggedEC2Object):
 
     def add_rule(self, ip_protocol, from_port, to_port,
                  src_group_name, src_group_owner_id, cidr_ip,
-                 src_group_group_id, dry_run=False):
+                 src_group_group_id, cidr_ipv6=None, dry_run=False):
         """
         Add a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -111,12 +111,13 @@ class SecurityGroup(TaggedEC2Object):
             src_group_name,
             src_group_owner_id,
             cidr_ip,
+            cidr_ipv6,
             src_group_group_id,
             dry_run=dry_run
         )
 
     def remove_rule(self, ip_protocol, from_port, to_port,
-                    src_group_name, src_group_owner_id, cidr_ip,
+                    src_group_name, src_group_owner_id, cidr_ip, cidr_ipv6,
                     src_group_group_id, dry_run=False):
         """
         Remove a rule to the SecurityGroup object.  Note that this method
@@ -138,13 +139,15 @@ class SecurityGroup(TaggedEC2Object):
                                 if grant.owner_id == src_group_owner_id:
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
+                                    elif grant.cidr_ipv6 == cidr_ipv6:
+                                        target_grant = grant
                         if target_grant:
                             rule.grants.remove(target_grant)
             if len(rule.grants) == 0:
                 self.rules.remove(target_rule)
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
-                  cidr_ip=None, src_group=None, dry_run=False):
+                  cidr_ip=None, cidr_ipv6=None, src_group=None, dry_run=False):
         """
         Add a new rule to this security group.
         You need to pass in either src_group_name
@@ -164,6 +167,9 @@ class SecurityGroup(TaggedEC2Object):
         :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+
+        :type cidr_ipv6: string or list of strings
+        :param cidr_ipv6: The CIDR IPv6 block you are providing access to.
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
@@ -200,6 +206,7 @@ class SecurityGroup(TaggedEC2Object):
                                                           cidr_ip,
                                                           group_id,
                                                           src_group_group_id,
+                                                          cidr_ipv6,
                                                           dry_run=dry_run)
         if status:
             if not isinstance(cidr_ip, list):
@@ -208,10 +215,17 @@ class SecurityGroup(TaggedEC2Object):
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
                               src_group_owner_id, single_cidr_ip,
                               src_group_group_id, dry_run=dry_run)
+            if cidr_ipv6:
+                if not isinstance(cidr_ipv6, list):
+                    cidr_ipv6 = [cidr_ipv6]
+                for single_cidr_ip in cidr_ipv6:
+                    self.add_rule(ip_protocol, from_port, to_port, src_group_name,
+                                  src_group_owner_id, None, src_group_group_id,
+                                  cidr_ipv6=single_cidr_ip, dry_run=dry_run)
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
-               cidr_ip=None, src_group=None, dry_run=False):
+               cidr_ip=None, cidr_ipv6=None, src_group=None, dry_run=False):
         group_name = None
         if not self.vpc_id:
             group_name = self.name
@@ -238,12 +252,13 @@ class SecurityGroup(TaggedEC2Object):
                                                        from_port,
                                                        to_port,
                                                        cidr_ip,
+                                                       cidr_ipv6,
                                                        group_id,
                                                        src_group_group_id,
                                                        dry_run=dry_run)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
-                             src_group_owner_id, cidr_ip, src_group_group_id,
+                             src_group_owner_id, cidr_ip, cidr_ipv6, src_group_group_id,
                              dry_run=dry_run)
         return status
 
@@ -351,13 +366,14 @@ class IPPermissions(object):
         else:
             setattr(self, name, value)
 
-    def add_grant(self, name=None, owner_id=None, cidr_ip=None, group_id=None,
-                  dry_run=False):
+    def add_grant(self, name=None, owner_id=None, cidr_ip=None, cidr_ipv6=None,
+                  group_id=None, dry_run=False):
         grant = GroupOrCIDR(self)
         grant.owner_id = owner_id
         grant.group_id = group_id
         grant.name = name
         grant.cidr_ip = cidr_ip
+        grant.cidr_ipv6 = cidr_ipv6
         self.grants.append(grant)
         return grant
 
@@ -369,6 +385,7 @@ class GroupOrCIDR(object):
         self.group_id = None
         self.name = None
         self.cidr_ip = None
+        self.cidr_ipv6 = None
 
     def __repr__(self):
         if self.cidr_ip:
@@ -388,5 +405,7 @@ class GroupOrCIDR(object):
             self.name = value
         if name == 'cidrIp':
             self.cidr_ip = value
+        elif name == 'cidrIpv6':
+            self.cidr_ipv6 = value
         else:
             setattr(self, name, value)
