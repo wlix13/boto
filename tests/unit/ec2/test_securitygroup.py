@@ -198,6 +198,7 @@ class SecurityGroupTest(unittest.TestCase):
             src_group_name='groupy',
             src_group_owner_id='12345',
             cidr_ip='10.0.0.1',
+            cidr_ipv6='::/0',
             src_group_group_id='54321',
             dry_run=False
         )
@@ -208,4 +209,4 @@ class SecurityGroupTest(unittest.TestCase):
         sg = SecurityGroup()
 
         with self.assertRaises(ValueError):
-            sg.remove_rule('ip', 80, 80, None, None, None, None)
+            sg.remove_rule('ip', 80, 80, None, None, None, None, None)
