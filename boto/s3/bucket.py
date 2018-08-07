@@ -223,6 +223,16 @@ class Bucket(object):
             k.handle_restore_headers(response)
             k.handle_addl_headers(response.getheaders())
             return k, response
+        elif response.status == 403:
+            # For backward-compatibility, we'll populate part of the exception
+            # with the most-common default.
+            err = self.connection.provider.storage_response_error(
+                response.status,
+                response.reason,
+            )
+            err.error_code = 'AccessDenied'
+            err.error_message = 'Access Denied'
+            raise err
         else:
             if response.status == 404:
                 return None, response
