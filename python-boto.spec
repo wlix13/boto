@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC6%{?buildid}%{?dist}
+Release:        CROC7%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,13 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Tue Aug 07 2018 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC7
+- ec2: add 'cidr_ipv6' in SecurityGroup entity
+- ec2: remove group_type
+- ec2: add VirtualSwitch and CRD operations on it
+- ec2: add switch_ids to instance
+- s3: add AccessDenied error processing
+
 * Mon Apr 02 2018 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC6
 - compat: dont use strict requires to ordereddict
 
