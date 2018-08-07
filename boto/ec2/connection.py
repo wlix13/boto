@@ -3057,7 +3057,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)], verb='POST')
 
-    def create_security_group(self, name, description, group_type=None,
+    def create_security_group(self, name, description, vpc_id=None,
                               dry_run=False):
         """
         Create a new security group for your account.
@@ -3082,8 +3082,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName': name,
                   'GroupDescription': description}
 
-        if group_type is not None:
-            params['GroupType'] = group_type
+        if vpc_id is not None:
+            params['VpcId'] = vpc_id
         if dry_run:
             params['DryRun'] = 'true'
 
