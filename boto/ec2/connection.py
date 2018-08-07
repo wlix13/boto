@@ -73,6 +73,7 @@ from boto.exception import BotoClientError
 from boto.compat import six
 from boto.ec2.export_task import ExportTask, ExportVolumeTask
 from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
+from boto.ec2.virtualswitch import VirtualSwitch
 
 #boto.set_stream_logger('ec2')
 
@@ -761,7 +762,7 @@ class EC2Connection(AWSQueryConnection):
                       high_available=None,
                       root_device_name=None, public_addressing=None,
                       virtualization_type=None, description=None,
-                      private_dns_name=None):
+                      private_dns_name=None, switch_ids=None):
         """
         Runs an image on EC2.
 
@@ -929,6 +930,9 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: Instance description.
 
+        :type switch_ids: list
+        :param switch_ids: list of virtual switch IDs
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -1011,6 +1015,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if private_dns_name:
             params['PrivateDnsName'] = private_dns_name
+        if switch_ids:
+            self.build_list_params(params, switch_ids, 'SwitchId')
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -5117,3 +5123,80 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, export_task_ids, 'ExportTaskId')
         return self.get_list('DescribeExportVolumeTasks', params,
                              [('item', ExportVolumeTask)], verb='GET')
+
+    # VirtualSwitch methods
+
+    def get_all_virtual_switches(self, switch_ids=None, filters=None,
+                                 dry_run=False):
+        """
+        Return information about virtual switches.
+
+        :type switch_ids: list
+        :param switch_ids: list of switch IDs, all if ``None``
+
+        :type filters: dict
+        :param filters: filters
+
+        :type dry_run: bool
+        :param dry_run: dry run
+
+        :rtype: list
+        :return: list of :class:`boto.ec2.virtualswitch.VirtualSwitch`
+        """
+        params = {}
+        if switch_ids is not None:
+            self.build_list_params(params, switch_ids, 'SwitchId')
+        if filters is not None:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_list('DescribeVirtualSwitches', params,
+                             [('item', VirtualSwitch)], verb='POST')
+
+    def create_virtual_switch(self, name, dry_run=False):
+        """
+        Create virtual switch.
+
+        :type name: str
+        :param name: switch's name
+
+        :type dry_run: bool
+        :param dry_run: dry run
+
+        :rtype: :class:`boto.ec2.virtualswitch.VirtualSwitch`
+        :return: created virtual switch
+        """
+        params = {
+            'SwitchName': name,
+        }
+
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        switch = self.get_object('CreateVirtualSwitch', params,
+                                 VirtualSwitch, verb='POST')
+        return switch
+
+    def delete_virtual_switch(self, switch_id=None, name=None, dry_run=False):
+        """
+        Delete virtual switch.
+
+        :type switch_id: str
+        :param switch_id: virtual switch EC2 ID
+
+        :type name: str
+        :param name: virtual switch name
+
+        :type dry_run: bool
+        :param dry_run: dry run
+        """
+        params = {}
+        if switch_id is not None:
+            params['SwitchId'] = switch_id
+        if name is not None:
+            params['SwitchName'] = name
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_status('DeleteVirtualSwitch', params)
