@@ -4689,17 +4689,28 @@ class EC2Connection(AWSQueryConnection):
 
     # External networks
 
-    def attach_extnetwork(self, network_name, group_name):
+    def attach_extnetwork(self, network_name, subnet_id=None, switch_id=None, switch_name=None):
         """Attach an external network.
 
         :type network_name: string
         :param network_name: The name of the external network.
 
-        :type group_name: string
-        :param group_name: The name of the security group.
+        :type subnet_id: string
+        :param subnet_id: The ID of the subnet.
+
+        :type switch_id: string
+        :param switch_id: The ID of the virtual switch.
+
+        :type switch_name: string
+        :param switch_name: The name of the virtual switch.
         """
-        params = {'ExtNetName' : network_name,
-                  'GroupName': group_name}
+        params = {'ExtNetName': network_name}
+        if subnet_id:
+            params['SubnetId'] = subnet_id
+        if switch_id:
+            params['SwitchId'] = switch_id
+        if switch_name:
+            params['SwitchName'] = switch_name
         return self.get_status('AttachExtNetwork', params, verb='POST')
 
     def get_all_extnetworks(self):
