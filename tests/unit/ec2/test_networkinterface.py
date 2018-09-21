@@ -141,9 +141,15 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             associate_public_ip_address=True
         )
 
+        self.network_interfaces_spec4 = NetworkInterfaceSpecification(
+            device_index=4, switch_id='switch_id4', description='description4',
+            delete_on_termination=True,
+        )
+
     def test_param_serialization(self):
         collection = NetworkInterfaceCollection(self.network_interfaces_spec1,
-                                                self.network_interfaces_spec2)
+                                                self.network_interfaces_spec2,
+                                                self.network_interfaces_spec4)
         params = {}
         collection.build_list_params(params)
         self.assertDictEqual(params, {
@@ -171,6 +177,10 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'NetworkInterface.1.PrivateIpAddresses.1.Primary': 'false',
             'NetworkInterface.1.PrivateIpAddresses.1.PrivateIpAddress':
                 '10.0.1.11',
+            'NetworkInterface.2.DeviceIndex': '4',
+            'NetworkInterface.2.SwitchId': 'switch_id4',
+            'NetworkInterface.2.Description': 'description4',
+            'NetworkInterface.2.DeleteOnTermination': 'true',
         })
 
     def test_add_prefix_to_serialization(self):

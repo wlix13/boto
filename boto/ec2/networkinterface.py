@@ -102,6 +102,7 @@ class NetworkInterface(TaggedEC2Object):
         super(NetworkInterface, self).__init__(connection)
         self.id = None
         self.subnet_id = None
+        self.switch_id = None
         self.vpc_id = None
         self.availability_zone = None
         self.description = None
@@ -139,6 +140,8 @@ class NetworkInterface(TaggedEC2Object):
             self.id = value
         elif name == 'subnetId':
             self.subnet_id = value
+        elif name == 'switchId':
+            self.switch_id = value
         elif name == 'vpcId':
             self.vpc_id = value
         elif name == 'availabilityZone':
@@ -275,6 +278,8 @@ class NetworkInterfaceCollection(list):
                 params[full_prefix + 'DeviceIndex'] = 0
             if spec.subnet_id is not None:
                 params[full_prefix + 'SubnetId'] = str(spec.subnet_id)
+            if spec.switch_id is not None:
+                params[full_prefix + 'SwitchId'] = str(spec.switch_id)
             if spec.description is not None:
                 params[full_prefix + 'Description'] = str(spec.description)
             if spec.delete_on_termination is not None:
@@ -333,7 +338,8 @@ class NetworkInterfaceCollection(list):
 
 class NetworkInterfaceSpecification(object):
     def __init__(self, network_interface_id=None, device_index=None,
-                 subnet_id=None, description=None, private_ip_address=None,
+                 subnet_id=None, switch_id=None, description=None,
+                 private_ip_address=None,
                  groups=None, delete_on_termination=None,
                  private_ip_addresses=None,
                  secondary_private_ip_address_count=None,
@@ -341,6 +347,7 @@ class NetworkInterfaceSpecification(object):
         self.network_interface_id = network_interface_id
         self.device_index = device_index
         self.subnet_id = subnet_id
+        self.switch_id = switch_id
         self.description = description
         self.private_ip_address = private_ip_address
         self.groups = groups
