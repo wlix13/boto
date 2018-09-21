@@ -114,6 +114,7 @@ class NetworkInterface(TaggedEC2Object):
         self.source_dest_check = None
         self.groups = []
         self.attachment = None
+        self.private_dns_name = None
         self.private_ip_addresses = []
 
     def __repr__(self):
@@ -159,6 +160,8 @@ class NetworkInterface(TaggedEC2Object):
             self.status = value
         elif name == 'macAddress':
             self.mac_address = value
+        elif name == "privateDnsName":
+            self.private_dns_name = value
         elif name == 'privateIpAddress':
             self.private_ip_address = value
         elif name == 'sourceDestCheck':
