@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC7%{?buildid}%{?dist}
+Release:        CROC8%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,11 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Fri Oct 05 2018 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC8
+- requirements: pin pycparser version
+- ec2: update PrivateIp according NAPI
+- ec2: update ExtNet according Switch and Subnet API
+
 * Tue Aug 07 2018 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC7
 - ec2: add 'cidr_ipv6' in SecurityGroup entity
 - ec2: remove group_type
