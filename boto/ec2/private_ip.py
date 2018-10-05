@@ -32,7 +32,7 @@ class PrivateIP(EC2Object):
     def __init__(self, connection=None):
         super(PrivateIP, self).__init__(connection)
         self.id = None
-        self.group_name = None
+        self.subnet_id = None
         self.state = None
         self.availability_zone = None
         self.private_ip_address = None
@@ -45,8 +45,8 @@ class PrivateIP(EC2Object):
     def endElement(self, name, value, connection):
         if name == 'privateIpAddressId':
             self.id = value
-        elif name == 'groupName':
-            self.group_name = value
+        elif name == 'subnetId':
+            self.subnet_id = value
         elif name == 'state':
             self.state = value
         elif name == 'availabilityZone':
