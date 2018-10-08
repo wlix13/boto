@@ -359,3 +359,37 @@ class NetworkInterfaceSpecification(object):
         self.secondary_private_ip_address_count = \
                 secondary_private_ip_address_count
         self.associate_public_ip_address = associate_public_ip_address
+
+
+class NetworkInterfaceAttribute(dict):
+    ValidValues = ["description", "groupSet", "sourceDestCheck", "attachment"]
+
+    def __init__(self, parent=None):
+        dict.__init__(self)
+        self.network_interface_id = None
+        self.request_id = None
+        self._current_value = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'groupSet':
+            self[name] = ResultSet([('item', Group)])
+            return self[name]
+        elif name == 'attachment':
+            self[name] = Attachment()
+            return self[name]
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'networkInterfaceId':
+            self.network_interface_id = value
+        elif name == 'requestId':
+            self.request_id = value
+        elif name == 'value':
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            self._current_value = value
+        elif name in self.ValidValues:
+            self[name] = self._current_value

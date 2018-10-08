@@ -65,7 +65,7 @@ from boto.ec2.tariff import Tariff
 from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
-from boto.ec2.networkinterface import NetworkInterface
+from boto.ec2.networkinterface import NetworkInterface, NetworkInterfaceAttribute
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
@@ -1184,6 +1184,60 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_object('DescribeInstanceAttribute', params,
                                InstanceAttribute, verb='POST')
+
+    def get_network_interface_attribute(self, interface_id, attribute, dry_run=False):
+        """
+        Gets an attribute from a network interface.
+
+        :type interface_id: string
+        :param interface_id: The interface id. Looks like 'eni-xxxxxxxx'
+
+        :type attribute: string
+        :param attribute: The attribute you need information about
+            Valid choices are:
+
+            * sourceDestCheck
+            * groupSet
+            * description
+            * attachment
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: :class:`boto.ec2.networkinterface.NetworkInterfaceAttribute`
+        :return: An NetworkInterfaceAttribute object representing the value of the
+                 attribute requested
+        """
+
+        params = {'NetworkInterfaceId': interface_id}
+        if attribute:
+            params['Attribute'] = attribute
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('DescribeNetworkInterfaceAttribute', params,
+                               NetworkInterfaceAttribute, verb='POST')
+
+    def reset_network_interface_attribute(self, interface_id, attribute, dry_run=False):
+        """
+        Resets an attribute of a network interface.
+
+        :type interface_id: string
+        :param interface_id: The interface id. Looks like 'eni-xxxxxxxx'
+
+        :type attribute: string
+        :param attribute: The attribute to reset
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+        params = {'NetworkInterfaceId': interface_id,
+                  'Attribute': attribute}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('ResetNetworkInterfaceAttribute', params, verb='POST')
 
     def modify_network_interface_attribute(self, interface_id, attr, value,
                                            attachment_id=None, dry_run=False):
