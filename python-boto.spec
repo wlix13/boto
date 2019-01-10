@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC8%{?buildid}%{?dist}
+Release:        CROC9%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Thu Jan 10 2019 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC9
+- requirements: pin idna version
+- ec2: add to VirtualSwitch an optional parameter 'AvailabilityZone'
+
 * Fri Oct 05 2018 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC8
 - requirements: pin pycparser version
 - ec2: update PrivateIp according NAPI
