@@ -5161,12 +5161,15 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeVirtualSwitches', params,
                              [('item', VirtualSwitch)], verb='POST')
 
-    def create_virtual_switch(self, name, dry_run=False):
+    def create_virtual_switch(self, name, availability_zone=None, dry_run=False):
         """
         Create virtual switch.
 
         :type name: str
         :param name: switch's name
+
+        :type availability_zone: str
+        :param availability_zone: The AZ you want the switch in
 
         :type dry_run: bool
         :param dry_run: dry run
@@ -5178,6 +5181,8 @@ class EC2Connection(AWSQueryConnection):
             'SwitchName': name,
         }
 
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
         if dry_run:
             params['DryRun'] = 'true'
 

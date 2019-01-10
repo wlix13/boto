@@ -9,6 +9,7 @@ class VirtualSwitch(TaggedEC2Object):
         super(VirtualSwitch, self).__init__(connection)
         self.id = id
         self.name = name
+        self.availability_zone = None
 
     def __repr__(self):
         return 'VirtualSwitch:%s' % self.name
@@ -26,6 +27,8 @@ class VirtualSwitch(TaggedEC2Object):
             self.id = value
         elif name == 'switchName':
             self.name = value
+        elif name == 'availabilityZone':
+            self.availability_zone = value
         elif name == 'return':
             if value == 'false':
                 self.status = False
@@ -51,7 +54,7 @@ class VirtualSwitch(TaggedEC2Object):
 
         return self.connection.delete_virtual_switch(**kwargs)
 
-    def create(self, dry_run=False):
+    def create(self, availability_zone=None, dry_run=False):
         """
         Create virtual switch.
 
@@ -63,6 +66,7 @@ class VirtualSwitch(TaggedEC2Object):
         """
         kwargs = {
             'name': self.name,
+            'availability_zone': availability_zone,
             'dry_run': dry_run,
         }
 
