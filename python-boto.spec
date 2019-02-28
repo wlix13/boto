@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC9%{?buildid}%{?dist}
+Release:        CROC10%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,9 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Thu Feb 28 2019 Nikita Kretov <kretov995@gmail.com> - 2.46.1-CROC10
+- ec2: Add 'modify-instance-placemenet' method
+
 * Thu Jan 10 2019 Mikhail Ushanov <gm.mephisto@gmail.com> - 2.46.1-CROC9
 - requirements: pin idna version
 - ec2: add to VirtualSwitch an optional parameter 'AvailabilityZone'
