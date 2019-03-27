@@ -4353,7 +4353,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('CreateTags', params, verb='POST')
 
-    def delete_tags(self, resource_ids, tags, dry_run=False):
+    def delete_tags(self, resource_ids, tags=None, dry_run=False):
         """
         Delete metadata tags for the specified resource ids.
 
@@ -4377,7 +4377,8 @@ class EC2Connection(AWSQueryConnection):
             tags = {}.fromkeys(tags, None)
         params = {}
         self.build_list_params(params, resource_ids, 'ResourceId')
-        self.build_tag_param_list(params, tags)
+        if tags is not None:
+            self.build_tag_param_list(params, tags)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteTags', params, verb='POST')
