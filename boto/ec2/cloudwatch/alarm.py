@@ -64,7 +64,8 @@ class MetricAlarm(object):
                  threshold=None, period=None, evaluation_periods=None,
                  unit=None, description='', dimensions=None,
                  alarm_actions=None, insufficient_data_actions=None,
-                 ok_actions=None):
+                 ok_actions=None, datapoints_to_alarm=None,
+                 treat_missing_data=None):
         """
         Creates a new Alarm.
 
@@ -133,6 +134,18 @@ class MetricAlarm(object):
 
         :type ok_actions: list of strs
         :param ok_actions: A list of the ARNs of the actions to take in OK state
+
+        :type datapoints_to_alarm: int
+        :param datapoints_to_alarm: The number of datapoints that must be
+                                      breaching to trigger the alarm.
+
+        :type treat_missing_data: str
+        :param treat_missing_data: Sets how this alarm is to handle
+                                     missing data points.
+                                   Allowed Values are:
+                                     breaching|notBreaching|ignore|missing
+                                   Default Value: missing
+
         """
         self.name = name
         self.connection = connection
@@ -163,6 +176,8 @@ class MetricAlarm(object):
         self.alarm_actions = alarm_actions
         self.insufficient_data_actions = insufficient_data_actions
         self.ok_actions = ok_actions
+        self.datapoints_to_alarm = datapoints_to_alarm
+        self.treat_missing_data = treat_missing_data
 
     def __repr__(self):
         return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric,
@@ -217,6 +232,10 @@ class MetricAlarm(object):
             self.threshold = float(value)
         elif name == 'Unit':
             self.unit = value
+        elif name == 'DatapointsToAlarm':
+            self.datapoints_to_alarm = int(value)
+        elif name == "TreatMissingData":
+            self.treat_missing_data = value
         else:
             setattr(self, name, value)
 

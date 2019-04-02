@@ -533,6 +533,10 @@ class CloudWatchConnection(AWSQueryConnection):
                                    'OKActions.member.%s')
         if alarm.unit:
             params['Unit'] = alarm.unit
+        if alarm.datapoints_to_alarm:
+            params["DatapointsToAlarm"] = alarm.datapoints_to_alarm
+        if alarm.treat_missing_data:
+            params["TreatMissingData"] = alarm.treat_missing_data
         alarm.connection = self
         return self.get_status('PutMetricAlarm', params)
     create_alarm = put_metric_alarm
