@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC10%{?buildid}%{?dist}
+Release:        CROC11%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Fri Apr 05 2019 Kretov Nikita <kretov995@gmail.com> - - 2.46.1-CROC11
+- cw: add new parameters for MetricAlarms
+- ec2: Allow Tags deletion by resource ID only
+
 * Thu Feb 28 2019 Nikita Kretov <kretov995@gmail.com> - 2.46.1-CROC10
 - ec2: Add 'modify-instance-placemenet' method
 
