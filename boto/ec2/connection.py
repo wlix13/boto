@@ -3262,6 +3262,7 @@ class EC2Connection(AWSQueryConnection):
                                  cidr_ip=None, group_id=None,
                                  src_security_group_group_id=None,
                                  cidr_ipv6=None,
+                                 description=None,
                                  dry_run=False):
         """
         Add a new rule to an existing security group.
@@ -3308,6 +3309,9 @@ class EC2Connection(AWSQueryConnection):
             group you are granting access to.  Can be used instead of
             src_security_group_name
 
+        :type description: string
+        :param description: The description of the rule.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -3335,6 +3339,8 @@ class EC2Connection(AWSQueryConnection):
         if src_security_group_group_id:
             param_name = 'IpPermissions.1.Groups.1.GroupId'
             params[param_name] = src_security_group_group_id
+            if description is not None:
+                params['IpPermissions.1.Groups.1.Description'] = description
         if ip_protocol:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port is not None:
@@ -3347,12 +3353,16 @@ class EC2Connection(AWSQueryConnection):
             for i, single_cidr_ip in enumerate(cidr_ip):
                 params['IpPermissions.1.IpRanges.%d.CidrIp' % (i + 1)] = \
                     single_cidr_ip
+                if description is not None:
+                    params['IpPermissions.1.IpRanges.%d.Description' % (i + 1)] = description
         if cidr_ipv6:
             if not isinstance(cidr_ipv6, list):
                 cidr_ipv6 = [cidr_ipv6]
             for i, single_cidr_ip in enumerate(cidr_ipv6):
                 params['IpPermissions.1.Ipv6Ranges.%d.CidrIpv6' % (i + 1)] = \
                     single_cidr_ip
+                if description is not None:
+                    params['IpPermissions.1.Ipv6Ranges.%d.Description' % (i + 1)] = description
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -3367,6 +3377,7 @@ class EC2Connection(AWSQueryConnection):
                                         src_group_id=None,
                                         cidr_ip=None,
                                         cidr_ipv6=None,
+                                        description=None,
                                         dry_run=False):
         """
         The action adds one or more egress rules to a VPC security
@@ -3390,14 +3401,20 @@ class EC2Connection(AWSQueryConnection):
             params['IpPermissions.1.ToPort'] = to_port
         if src_group_id is not None:
             params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+            if description is not None:
+                params['IpPermissions.1.Groups.1.Description'] = description
         if cidr_ip is not None:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+            if description is not None:
+                params['IpPermissions.1.IpRanges.1.Description'] = description
         if cidr_ipv6:
             if not isinstance(cidr_ipv6, list):
                 cidr_ipv6 = [cidr_ipv6]
             for i, single_cidr_ip in enumerate(cidr_ipv6):
                 params['IpPermissions.1.Ipv6Ranges.%d.CidrIpv6' % (i + 1)] = \
                     single_cidr_ip
+                if description is not None:
+                    params['IpPermissions.1.Ipv6Ranges.1.Description'] = description
         if dry_run:
             params['DryRun'] = 'true'
 
