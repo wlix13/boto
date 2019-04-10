@@ -3645,6 +3645,101 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('RevokeSecurityGroupEgress',
                                params, verb='POST')
 
+    def update_security_group_rule_description(self,
+                                        group_id,
+                                        ip_protocol,
+                                        from_port=None,
+                                        to_port=None,
+                                        src_group_id=None,
+                                        cidr_ip=None,
+                                        cidr_ipv6=None,
+                                        description=None,
+                                        dry_run=False):
+        """
+        The action updates description of specified ingress rule.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {
+            'GroupId': group_id,
+            'IpPermissions.1.IpProtocol': ip_protocol
+        }
+
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if src_group_id is not None:
+            params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+            if description is not None:
+                params['IpPermissions.1.Groups.1.Description'] = description
+        if cidr_ip is not None:
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+            if description is not None:
+                params['IpPermissions.1.IpRanges.1.Description'] = description
+        if cidr_ipv6:
+            if not isinstance(cidr_ipv6, list):
+                cidr_ipv6 = [cidr_ipv6]
+            for i, single_cidr_ip in enumerate(cidr_ipv6):
+                params['IpPermissions.1.Ipv6Ranges.%d.CidrIpv6' % (i + 1)] = \
+                    single_cidr_ip
+                if description is not None:
+                    params['IpPermissions.1.Ipv6Ranges.%d.Description' % (i + 1)] = description
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_status('UpdateSecurityGroupRuleDescriptionsIngress',
+                               params, verb='POST')
+
+    def update_security_group_rule_description_egress(self,
+                                        group_id,
+                                        ip_protocol,
+                                        from_port=None,
+                                        to_port=None,
+                                        src_group_id=None,
+                                        cidr_ip=None,
+                                        cidr_ipv6=None,
+                                        description=None,
+                                        dry_run=False):
+        """
+        The action updates description of specified egress rule.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {
+            'GroupId': group_id,
+            'IpPermissions.1.IpProtocol': ip_protocol
+        }
+
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if src_group_id is not None:
+            params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+            if description is not None:
+                params['IpPermissions.1.Groups.1.Description'] = description
+        if cidr_ip is not None:
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+            if description is not None:
+                params['IpPermissions.1.IpRanges.1.Description'] = description
+        if cidr_ipv6:
+            if not isinstance(cidr_ipv6, list):
+                cidr_ipv6 = [cidr_ipv6]
+            for i, single_cidr_ip in enumerate(cidr_ipv6):
+                params['IpPermissions.1.Ipv6Ranges.%d.CidrIpv6' % (i + 1)] = \
+                    single_cidr_ip
+                if description is not None:
+                    params['IpPermissions.1.Ipv6Ranges.%d.Description' % (i + 1)] = description
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_status('UpdateSecurityGroupRuleDescriptionsEgress',
+                               params, verb='POST')
     #
     # Regions
     #
