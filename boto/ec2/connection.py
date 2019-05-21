@@ -62,6 +62,7 @@ from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.private_ip import PrivateIP
 from boto.ec2.tag import Tag
+from boto.ec2.tariff import Tariff
 from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
@@ -5242,3 +5243,13 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
 
         return self.get_status('DeleteVirtualSwitch', params)
+
+    def get_tariff(self):
+        """
+        Get customer's tariff
+
+        :return: customer's tariff object
+        """
+        tariff = self.get_object('GetTariff', {}, Tariff, verb='POST')
+
+        return tariff
