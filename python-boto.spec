@@ -138,6 +138,7 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 * Wed May 22 2019 Nikita Kretov <kretov995@gmail.com> - - 2.46.1-CROC12
 - ec2: add get_tariff method
 - travis: pin ubuntu dist
+- travis: fix auto-build
 
 * Fri Apr 05 2019 Kretov Nikita <kretov995@gmail.com> - - 2.46.1-CROC11
 - cw: add new parameters for MetricAlarms
