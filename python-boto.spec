@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC11%{?buildid}%{?dist}
+Release:        CROC12%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Web May 22 2019 Kretov Nikita <kretov995@gmail.com> - - 2.46.1-CROC12
+- ec2: add get_tariff method
+- travis: pin ubuntu dist
+
 * Fri Apr 05 2019 Kretov Nikita <kretov995@gmail.com> - - 2.46.1-CROC11
 - cw: add new parameters for MetricAlarms
 - ec2: Allow Tags deletion by resource ID only
