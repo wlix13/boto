@@ -135,7 +135,7 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
-* Web May 22 2019 Kretov Nikita <kretov995@gmail.com> - - 2.46.1-CROC12
+* Wed May 22 2019 Nikita Kretov <kretov995@gmail.com> - - 2.46.1-CROC12
 - ec2: add get_tariff method
 - travis: pin ubuntu dist
 
