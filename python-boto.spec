@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC12%{?buildid}%{?dist}
+Release:        CROC13%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,13 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Thu Jun 06 2019 Pavel Kulyov <pkulev@croc.ru> - 2.46.1-CROC13
+- ec2: add parser for Network Interface Association
+- ec2: add missing Reset/Describe NI methods
+- ec2: drop PrivateIps support
+- ec2: add private DNS name parsing to NetworkInterface
+- ec2: add switch_id to NetworkInterface
+
 * Wed May 22 2019 Nikita Kretov <kretov995@gmail.com> - - 2.46.1-CROC12
 - ec2: add get_tariff method
 - travis: pin ubuntu dist
