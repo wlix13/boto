@@ -29,6 +29,44 @@ from boto.resultset import ResultSet
 from boto.ec2.group import Group
 
 
+class Association(object):
+    """
+    :ivar id: The association ID.
+    :ivar allocation_id: The allocation ID.
+    :ivar ip_owner_id: The ID of the Elastic IP address owner.
+    :ivar public_dns_name: The public DNS name.
+    :ivar public_ip: The address of the Elastic IP address
+        bound to the network interface.
+    """
+
+    def __init__(self):
+        self.id = None
+        self.allocation_id = None
+        self.ip_owner_id = None
+        self.public_dns_name = None
+        self.public_ip = None
+
+    def __repr__(self):
+        return 'Association:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'associationId':
+            self.id = value
+        elif name == 'allocationId':
+            self.allocation_id = value
+        elif name == 'ipOwnerId':
+            self.ip_owner_id = value
+        elif name == 'publicDnsName':
+            self.public_dns_name = value
+        elif name == 'publicIp':
+            self.public_ip = value
+        else:
+            setattr(self, name, value)
+
+
 class Attachment(object):
     """
     :ivar id: The ID of the attachment.
@@ -94,6 +132,7 @@ class NetworkInterface(TaggedEC2Object):
     :ivar source_dest_check: Flag to indicate whether to validate
         network traffic to or from this network interface.
     :ivar groups: List of security groups associated with the interface.
+    :ivar association: The association object.
     :ivar attachment: The attachment object.
     :ivar private_ip_addresses: A list of PrivateIPAddress objects.
     """
@@ -102,6 +141,7 @@ class NetworkInterface(TaggedEC2Object):
         super(NetworkInterface, self).__init__(connection)
         self.id = None
         self.subnet_id = None
+        self.switch_id = None
         self.vpc_id = None
         self.availability_zone = None
         self.description = None
@@ -112,7 +152,9 @@ class NetworkInterface(TaggedEC2Object):
         self.private_ip_address = None
         self.source_dest_check = None
         self.groups = []
+        self.association = None
         self.attachment = None
+        self.private_dns_name = None
         self.private_ip_addresses = []
 
     def __repr__(self):
@@ -128,6 +170,9 @@ class NetworkInterface(TaggedEC2Object):
         elif name == 'attachment':
             self.attachment = Attachment()
             return self.attachment
+        elif name == 'association':
+            self.association = Association()
+            return self.association
         elif name == 'privateIpAddressesSet':
             self.private_ip_addresses = ResultSet([('item', PrivateIPAddress)])
             return self.private_ip_addresses
@@ -139,6 +184,8 @@ class NetworkInterface(TaggedEC2Object):
             self.id = value
         elif name == 'subnetId':
             self.subnet_id = value
+        elif name == 'switchId':
+            self.switch_id = value
         elif name == 'vpcId':
             self.vpc_id = value
         elif name == 'availabilityZone':
@@ -156,6 +203,8 @@ class NetworkInterface(TaggedEC2Object):
             self.status = value
         elif name == 'macAddress':
             self.mac_address = value
+        elif name == "privateDnsName":
+            self.private_dns_name = value
         elif name == 'privateIpAddress':
             self.private_ip_address = value
         elif name == 'sourceDestCheck':
@@ -239,13 +288,16 @@ class NetworkInterface(TaggedEC2Object):
 
 class PrivateIPAddress(object):
     def __init__(self, connection=None, private_ip_address=None,
-                 primary=None):
+                 association=None, primary=None):
         self.connection = connection
         self.private_ip_address = private_ip_address
         self.primary = primary
+        self.association = association
 
     def startElement(self, name, attrs, connection):
-        pass
+        if name == 'association':
+            self.association = Association()
+            return self.association
 
     def endElement(self, name, value, connection):
         if name == 'privateIpAddress':
@@ -275,6 +327,8 @@ class NetworkInterfaceCollection(list):
                 params[full_prefix + 'DeviceIndex'] = 0
             if spec.subnet_id is not None:
                 params[full_prefix + 'SubnetId'] = str(spec.subnet_id)
+            if spec.switch_id is not None:
+                params[full_prefix + 'SwitchId'] = str(spec.switch_id)
             if spec.description is not None:
                 params[full_prefix + 'Description'] = str(spec.description)
             if spec.delete_on_termination is not None:
@@ -333,7 +387,8 @@ class NetworkInterfaceCollection(list):
 
 class NetworkInterfaceSpecification(object):
     def __init__(self, network_interface_id=None, device_index=None,
-                 subnet_id=None, description=None, private_ip_address=None,
+                 subnet_id=None, switch_id=None, description=None,
+                 private_ip_address=None,
                  groups=None, delete_on_termination=None,
                  private_ip_addresses=None,
                  secondary_private_ip_address_count=None,
@@ -341,6 +396,7 @@ class NetworkInterfaceSpecification(object):
         self.network_interface_id = network_interface_id
         self.device_index = device_index
         self.subnet_id = subnet_id
+        self.switch_id = switch_id
         self.description = description
         self.private_ip_address = private_ip_address
         self.groups = groups
@@ -349,3 +405,37 @@ class NetworkInterfaceSpecification(object):
         self.secondary_private_ip_address_count = \
                 secondary_private_ip_address_count
         self.associate_public_ip_address = associate_public_ip_address
+
+
+class NetworkInterfaceAttribute(dict):
+    ValidValues = ["description", "groupSet", "sourceDestCheck", "attachment"]
+
+    def __init__(self, parent=None):
+        dict.__init__(self)
+        self.network_interface_id = None
+        self.request_id = None
+        self._current_value = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'groupSet':
+            self[name] = ResultSet([('item', Group)])
+            return self[name]
+        elif name == 'attachment':
+            self[name] = Attachment()
+            return self[name]
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'networkInterfaceId':
+            self.network_interface_id = value
+        elif name == 'requestId':
+            self.request_id = value
+        elif name == 'value':
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            self._current_value = value
+        elif name in self.ValidValues:
+            self[name] = self._current_value

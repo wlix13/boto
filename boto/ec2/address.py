@@ -35,7 +35,6 @@ class Address(EC2Object):
     :ivar network_interface_id: The network interface (if any) that the address is associated with (VPC addresses only).
     :ivar network_interface_owner_id: The owner IID (VPC addresses only).
     :ivar private_ip_address: The private IP address associated with the Elastic IP address (VPC addresses only).
-    :ivar private_ip_address_id: The private IP address ID associated with the Elastic IP address (VPC addresses only).
     """
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
@@ -49,7 +48,6 @@ class Address(EC2Object):
         self.network_interface_id = None
         self.network_interface_owner_id = None
         self.private_ip_address = None
-        self.private_ip_address_id = None
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
@@ -71,8 +69,6 @@ class Address(EC2Object):
             self.network_interface_owner_id = value
         elif name == 'privateIpAddress':
             self.private_ip_address = value
-        elif name == 'privateIpAddressId':
-            self.private_ip_address_id = value
         else:
             setattr(self, name, value)
 
