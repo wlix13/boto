@@ -1,8 +1,17 @@
-%if 0%{?fedora} > 12 || 0%{?rhel} > 7
+%global dist_raw %(%{__grep} -oP "release \\K[0-9]+\\.[0-9]+" /etc/system-release | tr -d ".")
+
+%if 0%{?fedora} > 12 || 0%{?rhel} && 0%{?dist_raw} >= 75
 %bcond_without python3
 %else
 %bcond_with python3
 %endif
+
+# centos 7.2 and lower versions don't have %py2_* macros, so define it manually
+%if 0%{?rhel} && 0%{?dist_raw} <= 72
+%{!?py2_build: %global py2_build %py_build}
+%{!?py2_install: %global py2_install %py_install}
+%endif
+
 
 %if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
@@ -22,6 +31,15 @@
 
 %define pkgname boto
 %define buildid @BUILDID@
+%global sum AWS authentication for Amazon S3 for the python requests module
+%global descr \
+Boto is a Python package that provides interfaces to Amazon Web Services.\
+It supports over thirty services, such as S3 (Simple Storage Service),\
+SQS (Simple Queue Service), and EC2 (Elastic Compute Cloud) via their\
+REST and Query APIs.  The goal of boto is to support the full breadth\
+and depth of Amazon Web Services.  In addition, boto provides support\
+for other public services such as Google Storage in addition to private\
+cloud systems like Eucalyptus, OpenStack and Open Nebula.
 
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
@@ -36,8 +54,8 @@ Source0:        https://pypi.io/packages/source/b/boto/boto-%{version}.tar.gz
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
 %if %{with python3}
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
+BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python%{python3_pkgversion}-setuptools
 %endif  # with python3
 
 %if %{with unittests}
@@ -46,46 +64,42 @@ BuildRequires:  python-mock
 BuildRequires:  python-nose
 BuildRequires:  python-requests
 %if %{with python3}
-BuildRequires:  python3-httpretty
-BuildRequires:  python3-mock
-BuildRequires:  python3-nose
-BuildRequires:  python3-requests
+BuildRequires:  python%{python3_pkgversion}-httpretty
+BuildRequires:  python%{python3_pkgversion}-mock
+BuildRequires:  python%{python3_pkgversion}-nose
+BuildRequires:  python%{python3_pkgversion}-requests
 %endif  # with python3
 %endif  # with unittests
 
 BuildArch:      noarch
 
+%description
+%{descr}
+
+
+%package -n python2-%{pkgname}
+Summary:        %{sum}
 Requires:       python-requests
 %if 0%{?el6}
 Requires:       python-ordereddict
 %endif
-Obsoletes:      python-boto <= 1441065600:2.12.0-CROC8
+Provides:       python-boto
+Obsoletes:      python-boto <= 1441065600:2.46.1-CROC13%{?dist}
 
-%description
-Boto is a Python package that provides interfaces to Amazon Web Services.
-It supports over thirty services, such as S3 (Simple Storage Service),
-SQS (Simple Queue Service), and EC2 (Elastic Compute Cloud) via their
-REST and Query APIs.  The goal of boto is to support the full breadth
-and depth of Amazon Web Services.  In addition, boto provides support
-for other public services such as Google Storage in addition to private
-cloud systems like Eucalyptus, OpenStack and Open Nebula.
+
+%description -n python2-%{pkgname}
+%{descr}
 
 
 %if %{with python3}
-%package -n python3-%{pkgname}
+%package -n python%{python3_pkgversion}-%{pkgname}
 Summary:        A simple, lightweight interface to Amazon Web Services
 
-Requires:       python3-requests
+Requires:       python%{python3_pkgversion}-requests
 
 
-%description -n python3-%{pkgname}
-Boto is a Python package that provides interfaces to Amazon Web Services.
-It supports over thirty services, such as S3 (Simple Storage Service),
-SQS (Simple Queue Service), and EC2 (Elastic Compute Cloud) via their
-REST and Query APIs.  The goal of boto is to support the full breadth
-and depth of Amazon Web Services.  In addition, boto provides support
-for other public services such as Google Storage in addition to private
-cloud systems like Eucalyptus, OpenStack and Open Nebula.
+%description -n python%{python3_pkgversion}-%{pkgname}
+%{descr}
 %endif  # with python3
 
 
@@ -94,20 +108,20 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 
 
 %build
-%{__python2} setup.py build
+%{py2_build}
 %if %{with python3}
-%{__python3} setup.py build
+%{py3_build}
 %endif  # with python3
 
 
 %install
-%{__python2} setup.py install --skip-build --root $RPM_BUILD_ROOT
+%{py2_install}
 
 %if %{with python3}
-%{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
+%{py3_install}
 %endif  # with python3
 
-rm -f $RPM_BUILD_ROOT/%{_bindir}/*
+rm -f %buildroot/%{_bindir}/*
 
 
 %check
@@ -119,14 +133,14 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 %endif  # with unittests
 
 
-%files
+%files -n python2-%{pkgname}
 %defattr(-,root,root,-)
 %{python2_sitelib}/boto
 %{python2_sitelib}/boto-%{version}-*.egg-info
 %doc LICENSE README.rst
 
 %if %{with python3}
-%files -n python3-%{pkgname}
+%files -n python%{python3_pkgversion}-%{pkgname}
 %defattr(-,root,root,-)
 %{python3_sitelib}/boto
 %{python3_sitelib}/boto-%{version}-*.egg-info
