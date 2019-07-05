@@ -8,6 +8,8 @@ python:
   - "3.4"
   - "3.5"
   - "pypy-5.3.1"
+services:
+  - docker
 env:
   - BOTO_CONFIG=/tmp/nowhere
 before_install:
@@ -22,4 +24,12 @@ addons:
 install:
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then travis_retry pip install -r requirements-py26.txt; fi
   - travis_retry pip install -r requirements.txt
+
 script: python tests/test.py default
+
+jobs:
+  include:
+    - stage: rpmlint
+      before_install: skip
+      install: skip
+      script: make spec && docker run -v "$PWD"/python-boto.spec:/specs/python-boto.spec ubun/rpmlinter
