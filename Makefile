@@ -1,5 +1,5 @@
-.PHONY: clean clean-spec copr rpm sources spec srpm tests
-.SILENT: help
+.PHONY: clean clean-spec copr rpm sources spec srpm tests lint lint-cmt-msg lint-help-msg
+.SILENT: help lint-cmt-msg lint-help-msg
 
 DIST       ?= epel-6-x86_64
 PROJECT    ?= boto
@@ -8,6 +8,8 @@ VERSION     = $(shell rpm -q --qf "%{version}\n" --specfile $(PACKAGE).spec | he
 RELEASE     = $(shell rpm -q --qf "%{release}\n" --specfile $(PACKAGE).spec | head -1)
 
 GIT        := $(shell which git)
+ASPELL     := $(shell which aspell)
+RPMLINT    := $(shell which rpmlint)
 
 ifdef GIT
 HEAD_SHA := $(shell git rev-parse --short --verify HEAD)
@@ -23,6 +25,27 @@ help: ## show help
 	grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	sort | \
 	awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %s\n", $$1, $$2}'
+
+ifdef ASPELL
+lint-cmt-msg: ## lint commit messages
+	git log --oneline HEAD...master | \
+	cut -d ' ' -f 2- | \
+	aspell --master en list | \
+	sort -nr | \
+	uniq
+
+lint-help-msg: ## check help comments spelling
+	grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	aspell --master en list | sort -nr | uniq
+endif
+
+ifdef RPMLINT
+lint-spec: ## lint spec file
+lint-spec: spec
+lint-spec: ; $(RPMLINT) $(PACKAGE).spec
+endif
+
+lint: lint-cmt-msg lint-help-msg lint-spec
 
 spec: ## create spec file
 	@git cat-file -p $(HEAD_SHA):$(PACKAGE).spec | sed -e 's,@BUILDID@,$(BUILDID),g' > $(PACKAGE).spec
