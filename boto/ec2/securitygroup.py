@@ -96,7 +96,7 @@ class SecurityGroup(TaggedEC2Object):
 
     def add_rule(self, ip_protocol, from_port, to_port,
                  src_group_name, src_group_owner_id, cidr_ip,
-                 src_group_group_id, cidr_ipv6=None, dry_run=False):
+                 src_group_group_id, description, cidr_ipv6=None, dry_run=False):
         """
         Add a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -113,6 +113,7 @@ class SecurityGroup(TaggedEC2Object):
             cidr_ip,
             cidr_ipv6,
             src_group_group_id,
+            description=description,
             dry_run=dry_run
         )
 
@@ -147,7 +148,8 @@ class SecurityGroup(TaggedEC2Object):
                 self.rules.remove(target_rule)
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
-                  cidr_ip=None, cidr_ipv6=None, src_group=None, dry_run=False):
+                  cidr_ip=None, cidr_ipv6=None, src_group=None,
+                  description=None, dry_run=False):
         """
         Add a new rule to this security group.
         You need to pass in either src_group_name
@@ -174,6 +176,9 @@ class SecurityGroup(TaggedEC2Object):
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
         :param src_group: The Security Group you are granting access to.
+
+        :type description: strings
+        :param description: description of rule
 
         :rtype: bool
         :return: True if successful.
@@ -207,6 +212,7 @@ class SecurityGroup(TaggedEC2Object):
                                                           group_id,
                                                           src_group_group_id,
                                                           cidr_ipv6,
+                                                          description,
                                                           dry_run=dry_run)
         if status:
             if not isinstance(cidr_ip, list):
@@ -214,13 +220,14 @@ class SecurityGroup(TaggedEC2Object):
             for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
                               src_group_owner_id, single_cidr_ip,
-                              src_group_group_id, dry_run=dry_run)
+                              src_group_group_id, description, dry_run=dry_run)
             if cidr_ipv6:
                 if not isinstance(cidr_ipv6, list):
                     cidr_ipv6 = [cidr_ipv6]
                 for single_cidr_ip in cidr_ipv6:
                     self.add_rule(ip_protocol, from_port, to_port, src_group_name,
                                   src_group_owner_id, None, src_group_group_id,
+                                  description,
                                   cidr_ipv6=single_cidr_ip, dry_run=dry_run)
         return status
 
@@ -367,13 +374,14 @@ class IPPermissions(object):
             setattr(self, name, value)
 
     def add_grant(self, name=None, owner_id=None, cidr_ip=None, cidr_ipv6=None,
-                  group_id=None, dry_run=False):
+                  group_id=None, description=None, dry_run=False):
         grant = GroupOrCIDR(self)
         grant.owner_id = owner_id
         grant.group_id = group_id
         grant.name = name
         grant.cidr_ip = cidr_ip
         grant.cidr_ipv6 = cidr_ipv6
+        grant.description = description
         self.grants.append(grant)
         return grant
 
@@ -386,6 +394,7 @@ class GroupOrCIDR(object):
         self.name = None
         self.cidr_ip = None
         self.cidr_ipv6 = None
+        self.description = None
 
     def __repr__(self):
         if self.cidr_ip:
@@ -407,5 +416,7 @@ class GroupOrCIDR(object):
             self.cidr_ip = value
         elif name == 'cidrIpv6':
             self.cidr_ipv6 = value
+        elif name == 'description':
+            self.description = value
         else:
             setattr(self, name, value)

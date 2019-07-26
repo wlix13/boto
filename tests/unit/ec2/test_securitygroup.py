@@ -200,6 +200,7 @@ class SecurityGroupTest(unittest.TestCase):
             cidr_ip='10.0.0.1',
             cidr_ipv6='::/0',
             src_group_group_id='54321',
+            description="description",
             dry_run=False
         )
         self.assertEqual(len(sg.rules), 1)
