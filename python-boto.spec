@@ -26,7 +26,7 @@
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC13%{?buildid}%{?dist}
+Release:        CROC14%{?buildid}%{?dist}
 Epoch:          1441065600
 License:        MIT
 Group:          Development/Languages
@@ -135,6 +135,10 @@ rm -f $RPM_BUILD_ROOT/%{_bindir}/*
 
 
 %changelog
+* Fri Jul 26 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC14
+- ec2: methods for changing sg.rule description
+- ec2: add 'description' for GroupOrCIDR
+
 * Thu Jun 06 2019 Pavel Kulyov <pkulev@croc.ru> - 2.46.1-CROC13
 - ec2: add parser for Network Interface Association
 - ec2: add missing Reset/Describe NI methods
