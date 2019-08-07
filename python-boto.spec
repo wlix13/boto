@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC14%{?buildid}%{?dist}
+Release:        CROC15%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -83,7 +83,7 @@ Requires:       python-requests
 Requires:       python-ordereddict
 %endif
 Provides:       python-boto
-Obsoletes:      python-boto <= 1441065600:2.46.1-CROC13%{?dist}
+Obsoletes:      python-boto <= 1441065600:2.46.1-CROC14%{?dist}
 
 
 %description -n python2-%{pkgname}
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Wed Aug 07 2019 Vladislav Odinstov <odivlad@gmail.com> - 2.46.1-CROC15
+- spec: add support for py2/py3 epel build
+
 * Fri Jul 26 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC14
 - ec2: methods for changing sg.rule description
 - ec2: add 'description' for GroupOrCIDR
