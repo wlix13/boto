@@ -1929,6 +1929,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
+
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
@@ -1940,7 +1941,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
 
-    def allocate_address(self, domain=None, address=None, dry_run=False):
+    def allocate_address(self, domain=None, address=None, public_ipv4_pool=None, dry_run=False):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
@@ -1951,6 +1952,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type address: string
         :param address: The Elastic IP address to recover.
+
+        :type public_ipv4_pool: string
+        :param public_ipv4_pool: The ID of an address pool that you own.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1965,6 +1969,9 @@ class EC2Connection(AWSQueryConnection):
 
         if address is not None:
             params['Address'] = address
+
+        if public_ipv4_pool is not None:
+            params['PublicIpv4Pool'] = public_ipv4_pool
 
         if dry_run:
             params['DryRun'] = 'true'
