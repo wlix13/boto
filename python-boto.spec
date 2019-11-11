@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC15%{?buildid}%{?dist}
+Release:        CROC16%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Nov 11 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC16
+- [cloudtrail] add aws_sudo_id support 
+
 * Wed Aug 07 2019 Vladislav Odinstov <odivlad@gmail.com> - 2.46.1-CROC15
 - spec: add support for py2/py3 epel build
 
