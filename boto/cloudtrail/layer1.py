@@ -83,6 +83,7 @@ class CloudTrailConnection(AWSQueryConnection):
 
 
     def __init__(self, **kwargs):
+        self.aws_sudo_id = kwargs.pop('aws_sudo_id', None)
         region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
@@ -356,6 +357,8 @@ class CloudTrailConnection(AWSQueryConnection):
             'Content-Type': 'application/x-amz-json-1.1',
             'Content-Length': str(len(body)),
         }
+        if self.aws_sudo_id:
+            headers['X-Aws-Sudo-Id'] = self.aws_sudo_id
         http_request = self.build_base_http_request(
             method='POST', path='/', auth_path='/', params={},
             headers=headers, data=body)
