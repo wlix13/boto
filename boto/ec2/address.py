@@ -48,6 +48,7 @@ class Address(EC2Object):
         self.network_interface_id = None
         self.network_interface_owner_id = None
         self.private_ip_address = None
+        self.public_ipv4_pool = None
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
@@ -69,6 +70,8 @@ class Address(EC2Object):
             self.network_interface_owner_id = value
         elif name == 'privateIpAddress':
             self.private_ip_address = value
+        elif name == 'publicIpv4Pool':
+            self.public_ipv4_pool = value
         else:
             setattr(self, name, value)
 
