@@ -40,6 +40,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
+from boto.ec2.address_pool import AddressPool, ByoipCidr
 from boto.ec2.volume import Volume, VolumeAttribute
 from boto.ec2.volume import AttachmentSet
 from boto.ec2.snapshot import Snapshot
@@ -1928,6 +1929,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
+
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
@@ -1939,7 +1941,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
 
-    def allocate_address(self, domain=None, address=None, dry_run=False):
+    def allocate_address(self, domain=None, address=None, public_ipv4_pool=None, dry_run=False):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
@@ -1950,6 +1952,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type address: string
         :param address: The Elastic IP address to recover.
+
+        :type public_ipv4_pool: string
+        :param public_ipv4_pool: The ID of an address pool that you own.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1964,6 +1969,9 @@ class EC2Connection(AWSQueryConnection):
 
         if address is not None:
             params['Address'] = address
+
+        if public_ipv4_pool is not None:
+            params['PublicIpv4Pool'] = public_ipv4_pool
 
         if dry_run:
             params['DryRun'] = 'true'
@@ -2253,6 +2261,123 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_status('UnassignPrivateIpAddresses', params,
                                verb='POST')
+
+    # Address pools methods
+
+    def get_all_public_ipv4_pools(self, pool_ids=None, next_token=None, max_results=None):
+        """Describes the specified IPv4 address pools.
+
+        :type pool_ids: list
+        :param pool_ids: The IDs of the address pools.
+
+        :type next_token: str
+        :param next_token: The token for the next page of results.
+
+        :type max_results: int
+        :param max_results: The maximum number of results to return with
+                            a single call. To retrieve the remaining results,
+                            make another call with the returned nextToken value.
+
+        :rtype: list of :class:`boto.ec2.address_pool.AddressPool
+        :return: Information about the address pools.
+        """
+
+        params = {}
+        if next_token is not None:
+            params['NextToken'] = next_token
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        if pool_ids:
+            self.build_list_params(params, pool_ids, "PoolId")
+
+        return self.get_list(
+            "DescribePublicIpv4Pools", params, [('item', AddressPool)], verb='POST')
+
+    def get_all_byoip_cidrs(self, max_results=None, next_token=None):
+        """Describes the IP address ranges that were specified in calls to ProvisionByoipCidr.
+
+        :type max_results: int
+        :param max_results: The maximum number of results to return with
+                            a single call. To retrieve the remaining results,
+                            make another call with the returned nextToken value.
+
+        :type next_token: str
+        :param next_token: The token for the next page of results.
+
+        :rtype: list of :class:`boto.ec2.address_pool.ByoipCidr`
+        :return: Information about your address ranges.
+        """
+
+        params = {}
+        params['MaxResults'] = max_results or 100
+        if next_token is not None:
+            params['NextToken'] = next_token
+
+        return self.get_list(
+            "DescribeByoipCidrs", params, [('item', ByoipCidr)], verb='POST')
+
+    def provision_byoip_cidr(self, cidr, dry_run=None, description=None):
+        """
+        Provisions an address range for use with your AWS resources through bring your own
+        IP addresses (BYOIP) and creates a corresponding address pool. After the address
+        range is provisioned, it is ready to be advertised using AdvertiseByoipCidr.
+
+        :type cidr: str
+        :param cidr: The public IPv4 address range, in CIDR notation. The most specific
+                     prefix that you can specify is /24. The address range cannot overlap
+                     with another address range that you've brought to this or another Region.
+
+        :type dry_run: bool
+        :param dry_run: Checks whether you have the required permissions for the action,
+                        without actually making the request, and provides an error response.
+                        If you have the required permissions, the error response is
+                        DryRunOperation. Otherwise, it is UnauthorizedOperation.
+
+        :type description: str
+        :param description: A description for the address range and the address pool.
+
+        :rtype: :class:`boto.ec2.address_pool.ByoipCidr`
+        :return: Information about the BYOIP CIDR.
+        """
+
+        params = {}
+        params['Cidr'] = cidr
+        if dry_run is not None:
+            params['DryRun'] = dry_run
+        if description:
+            params['Description'] = description
+
+        return self.get_object(
+            "ProvisionByoipCidr", params, ByoipCidr, verb='POST')
+
+    def deprovision_byoip_cidr(self, cidr, dry_run=None):
+        """
+        Releases the specified address range that you provisioned for use
+        with your AWS resources through bring your own IP addresses (BYOIP)
+        and deletes the corresponding address pool.
+
+        :type cidr: str
+        :param cidr: The public IPv4 address range, in CIDR notation.
+                     The prefix must be the same prefix that you specified
+                     when you provisioned the address range.
+
+        :type dry_run: bool
+        :param dry_run: Checks whether you have the required permissions for the action,
+                        without actually making the request, and provides an error response.
+                        If you have the required permissions, the error response is
+                        DryRunOperation. Otherwise, it is UnauthorizedOperation.
+
+        :rtype: :class:`boto.ec2.address_pool.ByoipCidr`
+        :return: Informattion about the BYOIP CIDR.
+        """
+
+        params = {}
+        params['Cidr'] = cidr
+        if dry_run is not None:
+            params['DryRun'] = dry_run
+
+        return self.get_object(
+            "DeprovisionByoipCidr", params, ByoipCidr, verb='POST')
 
     # Volume methods
 
