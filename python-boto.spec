@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC16%{?buildid}%{?dist}
+Release:        CROC17%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,14 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Dec 24 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC17
+- ec2: add ability to modify security group's attribute.
+- ec2: add address pool entities
+- ec2: add address pool methods
+- ec2: add allocate_address() address pool support
+- ec2 tests: add tests for address pool methods
+- ec2: add public_ipv4_pool field handling 
+
 * Mon Nov 11 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC16
 - [cloudtrail] add aws_sudo_id support 
 
