@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC17%{?buildid}%{?dist}
+Release:        CROC18%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Feb 03 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC18
+- ec2 module: modify 'get_all_extnetworks' method
+
 * Tue Dec 24 2019 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC17
 - ec2: add ability to modify security group's attribute.
 - ec2: add address pool entities
