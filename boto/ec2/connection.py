@@ -2534,7 +2534,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None, volume_type=None,
-                      iops=None, encrypted=False, kms_key_id=None, dry_run=False):
+                      iops=None, encrypted=False, kms_key_id=None, dry_run=False,
+                      tags=None):
         """
         Create a new EBS Volume.
 
@@ -2568,6 +2569,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to created volume
+
         """
         if isinstance(zone, Zone):
             zone = zone.name
@@ -2588,6 +2592,11 @@ class EC2Connection(AWSQueryConnection):
                 params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "volume"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id, dry_run=False):
