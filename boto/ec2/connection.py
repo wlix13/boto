@@ -2754,7 +2754,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSnapshots', params,
                              [('item', Snapshot)], verb='POST')
 
-    def create_snapshot(self, volume_id, description=None, dry_run=False):
+    def create_snapshot(self, volume_id, description=None, dry_run=False, tags=None):
         """
         Create a snapshot of an existing EBS Volume.
 
@@ -2769,14 +2769,23 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created snapshot
+
         :rtype: :class:`boto.ec2.snapshot.Snapshot`
         :return: The created Snapshot object
+
         """
         params = {'VolumeId': volume_id}
         if description:
             params['Description'] = description[0:255]
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "snapshot"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
         return snapshot
