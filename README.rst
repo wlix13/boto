@@ -31,15 +31,12 @@ Introduction
 ************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
-Currently, all features work with Python 2.6 and 2.7. Work is under way to
-support Python 3.3+ in the same codebase. Modules are being ported one at
-a time with the help of the open source community, so please check below
-for compatibility with Python 3.3+.
+Currently, all features work with Python 2.6, 2.7 and 3.6. Modules are being ported one at a time with the help of the open source community, so please check below for compatibility with Python 3.6.
 
-To port a module to Python 3.3+, please view our `Contributing Guidelines`_
+To port a module to Python 3.6, please view our `Contributing Guidelines`_
 and the `Porting Guide`_. If you would like, you can open an issue to let
 others know about your work in progress. Tests **must** pass on Python
-2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+2.6, 2.7, 3.6 for pull requests to be accepted.
 
 
 ********
