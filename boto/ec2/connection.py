@@ -763,7 +763,8 @@ class EC2Connection(AWSQueryConnection):
                       high_available=None,
                       root_device_name=None, public_addressing=None,
                       virtualization_type=None, description=None,
-                      private_dns_name=None, switch_ids=None):
+                      private_dns_name=None, switch_ids=None,
+                      instance_tags=None, volume_tags=None):
         """
         Runs an image on EC2.
 
@@ -934,6 +935,12 @@ class EC2Connection(AWSQueryConnection):
         :type switch_ids: list
         :param switch_ids: list of virtual switch IDs
 
+        :type instance_tags: list of dicts
+        :param instance_tags: tags to apply to created instances
+
+        :type volume_tags: list of dicts
+        :param volume_tags: tags to apply to volumes attached to created instances
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -1018,6 +1025,16 @@ class EC2Connection(AWSQueryConnection):
             params['PrivateDnsName'] = private_dns_name
         if switch_ids:
             self.build_list_params(params, switch_ids, 'SwitchId')
+        if instance_tags:
+            params["TagSpecification.0.ResourceType"] = "instance"
+            for tag_n, tag in enumerate(instance_tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+        if volume_tags:
+            params["TagSpecification.1.ResourceType"] = "volume"
+            for tag_n, tag in enumerate(volume_tags):
+                params["TagSpecification.1.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.1.Tag.{0}.Value".format(tag_n)] = tag["value"]
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -2534,7 +2551,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None, volume_type=None,
-                      iops=None, encrypted=False, kms_key_id=None, dry_run=False):
+                      iops=None, encrypted=False, kms_key_id=None, dry_run=False,
+                      tags=None):
         """
         Create a new EBS Volume.
 
@@ -2568,6 +2586,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to created volume
+
         """
         if isinstance(zone, Zone):
             zone = zone.name
@@ -2588,6 +2609,11 @@ class EC2Connection(AWSQueryConnection):
                 params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "volume"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id, dry_run=False):
@@ -2745,7 +2771,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSnapshots', params,
                              [('item', Snapshot)], verb='POST')
 
-    def create_snapshot(self, volume_id, description=None, dry_run=False):
+    def create_snapshot(self, volume_id, description=None, dry_run=False, tags=None):
         """
         Create a snapshot of an existing EBS Volume.
 
@@ -2760,14 +2786,23 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created snapshot
+
         :rtype: :class:`boto.ec2.snapshot.Snapshot`
         :return: The created Snapshot object
+
         """
         params = {'VolumeId': volume_id}
         if description:
             params['Description'] = description[0:255]
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "snapshot"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
         return snapshot
