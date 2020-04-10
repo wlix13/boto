@@ -24,17 +24,18 @@ Represents an EC2 Keypair
 """
 
 import os
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
 
-class KeyPair(EC2Object):
+class KeyPair(TaggedEC2Object):
 
     def __init__(self, connection=None):
         super(KeyPair, self).__init__(connection)
         self.name = None
         self.fingerprint = None
         self.material = None
+        self.id = None
 
     def __repr__(self):
         return 'KeyPair:%s' % self.name
@@ -46,6 +47,8 @@ class KeyPair(EC2Object):
             self.fingerprint = value
         elif name == 'keyMaterial':
             self.material = value
+        elif name == "keyPairId":
+            self.id = value
         else:
             setattr(self, name, value)
 
