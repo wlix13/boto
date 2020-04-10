@@ -21,17 +21,18 @@
 """
 Represents an EC2 Placement Group
 """
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
 
-class PlacementGroup(EC2Object):
+class PlacementGroup(TaggedEC2Object):
 
     def __init__(self, connection=None, name=None, strategy=None, state=None):
         super(PlacementGroup, self).__init__(connection)
         self.name = name
         self.strategy = strategy
         self.state = state
+        self.id = None
 
     def __repr__(self):
         return 'PlacementGroup:%s' % self.name
@@ -43,6 +44,8 @@ class PlacementGroup(EC2Object):
             self.strategy = value
         elif name == 'state':
             self.state = value
+        elif name == "groupId":
+            self.id = value
         else:
             setattr(self, name, value)
 
