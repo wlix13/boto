@@ -1,10 +1,10 @@
 '''Croc Cloud EC2 Address Pool.'''
 
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 
 
-class AddressPool(EC2Object):
+class AddressPool(TaggedEC2Object):
 
     def __init__(self, connection=None, id=None):
         super(AddressPool, self).__init__(connection)

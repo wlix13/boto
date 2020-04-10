@@ -2281,7 +2281,8 @@ class EC2Connection(AWSQueryConnection):
 
     # Address pools methods
 
-    def get_all_public_ipv4_pools(self, pool_ids=None, next_token=None, max_results=None):
+    def get_all_public_ipv4_pools(self, pool_ids=None, next_token=None, max_results=None,
+                                  filters=None):
         """Describes the specified IPv4 address pools.
 
         :type pool_ids: list
@@ -2295,6 +2296,12 @@ class EC2Connection(AWSQueryConnection):
                             a single call. To retrieve the remaining results,
                             make another call with the returned nextToken value.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.
+
         :rtype: list of :class:`boto.ec2.address_pool.AddressPool
         :return: Information about the address pools.
         """
@@ -2306,6 +2313,8 @@ class EC2Connection(AWSQueryConnection):
             params['MaxResults'] = max_results
         if pool_ids:
             self.build_list_params(params, pool_ids, "PoolId")
+        if filters:
+            self.build_filter_params(params, filters)
 
         return self.get_list(
             "DescribePublicIpv4Pools", params, [('item', AddressPool)], verb='POST')
