@@ -20,10 +20,10 @@
 # IN THE SOFTWARE.
 
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 
 
-class Address(EC2Object):
+class Address(TaggedEC2Object):
     """
     Represents an EC2 Elastic IP Address
 
