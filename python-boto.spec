@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC19%{?buildid}%{?dist}
+Release:        CROC20%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,11 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon May 18 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC20
+- ec2: add filters for get_all_public_ipv4_pools
+- ec2: add id and tags to keypairs
+- ec2: add tags and id to placement groups
+
 * Wed Apr 01 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC19
 - EC2Connection: add tags to create_volume
 - EC2Connection: add tags to create_snapshot
