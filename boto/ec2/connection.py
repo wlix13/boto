@@ -3175,7 +3175,7 @@ class EC2Connection(AWSQueryConnection):
             else:
                 raise
 
-    def create_key_pair(self, key_name, dry_run=False):
+    def create_key_pair(self, key_name, dry_run=False, tags=None):
         """
         Create a new key pair for your account.
         This will create the key pair within the region you
@@ -3187,6 +3187,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to created keypair
+
         :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
                  The material attribute of the new KeyPair object
@@ -3195,6 +3198,12 @@ class EC2Connection(AWSQueryConnection):
         params = {'KeyName': key_name}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "key-pair"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+
         return self.get_object('CreateKeyPair', params, KeyPair, verb='POST')
 
     def delete_key_pair(self, key_name, dry_run=False):
@@ -3213,7 +3222,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteKeyPair', params, verb='POST')
 
-    def import_key_pair(self, key_name, public_key_material, dry_run=False):
+    def import_key_pair(self, key_name, public_key_material, dry_run=False, tags=None):
         """
         imports the public key from an RSA key pair that you created
         with a third-party tool.
@@ -3243,6 +3252,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to imported keypair
+
         :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: A :class:`boto.ec2.keypair.KeyPair` object representing
             the newly imported key pair.  This object will contain only
@@ -3253,6 +3265,11 @@ class EC2Connection(AWSQueryConnection):
                   'PublicKeyMaterial': public_key_material}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params["TagSpecification.0.ResourceType"] = "key-pair"
+            for tag_n, tag in enumerate(tags):
+                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
+                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
 
     # SecurityGroup methods
