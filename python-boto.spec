@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC21%{?buildid}%{?dist}
+Release:        CROC22%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Jun 15 2020 Evgeny Kovalev <evgkovalev@croc.ru> - 2.46.1-CROC22
+- ec2: add new method 'CreateDefaultSubnet'
+
 * Mon Jun 08 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC21
 - ec2: allow tagging keypair on creation and import
 
