@@ -1185,6 +1185,24 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_object('CreateSubnet', params, Subnet)
 
+    def create_default_subnet(self, availability_zone, dry_run=False):
+        """
+        Create a new default Subnet
+
+        :type availability_zone: str
+        :param availability_zone: The AZ you want the subnet in
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: The newly created Subnet
+        :return: A :class:`boto.vpc.customergateway.Subnet` object
+        """
+        params = {'AvailabilityZone': availability_zone}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateDefaultSubnet', params, Subnet)
+
     def delete_subnet(self, subnet_id, dry_run=False):
         """
         Delete a subnet.
