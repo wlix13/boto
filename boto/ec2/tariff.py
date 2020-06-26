@@ -70,6 +70,7 @@ class TariffService(object):
         self.description = None
         self.measure = None
         self.rates = None
+        self.deprecated = False
 
     def startElement(self, name, attrs, connection):
         if name == 'rates':
@@ -85,6 +86,8 @@ class TariffService(object):
             self.description = value
         elif name == 'measure':
             self.measure = value
+        elif name == "deprecated":
+            self.deprecated = bool(value)
         else:
             setattr(self, name, value)
 
