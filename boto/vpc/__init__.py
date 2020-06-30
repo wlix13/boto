@@ -1408,13 +1408,14 @@ class VPCConnection(EC2Connection):
                              [('item', VpnConnection)])
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id,
-                              static_routes_only=None, dry_run=False):
+                              static_routes_only=None, tunnel_options=None,
+                              dry_run=False):
         """
         Create a new VPN Connection.
 
         :type type: str
-        :param type: The type of VPN Connection.  Currently only 'ipsec.1'
-                     is supported
+        :param type: The type of VPN Connection. Supported values
+        are 'ipsec.1' and 'ipsec.legacy'.
 
         :type customer_gateway_id: str
         :param customer_gateway_id: The ID of the customer gateway.
@@ -1426,6 +1427,24 @@ class VPCConnection(EC2Connection):
         :param static_routes_only: Indicates whether the VPN connection
         requires static routes. If you are creating a VPN connection
         for a device that does not support BGP, you must specify true.
+
+        :type tunnel_options: list
+        :param tunnel_options: The tunnel options for the VPN connection.
+        List consists of dicts for each VPN connection.
+        Supported parameters:
+            - PreSharedKey: override pre-shared key (must be aws-compatible).
+            - TunnelInsideCidr: The range of inside IP addresses for the tunnel.
+              Any specified CIDR blocks must be unique across all VPN connections
+              that use the same virtual private gateway or customer gateway IP.
+              There's also a way to explicitly specify an IP address that will be used
+              for customer gateway side in IPSEC tunnel. To do so, specify one of the
+              host addresses in CIDR notation for the subnet of choice.
+              For example: by providing 169.254.255.13/30, it is interpeted that
+              169.254.255.12/30 subnet must be used for IPSEC tunnel,
+              169.254.255.14 will be used for VPN gateway side, and 169.254.255.13
+              will be used for customer gateway side.
+              Constraints: A size /30 CIDR block (or a specific IP address of /30 subnet
+              in CIDR notation) from the 169.254.255.0/24 range.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1440,6 +1459,17 @@ class VPCConnection(EC2Connection):
             if isinstance(static_routes_only, bool):
                 static_routes_only = str(static_routes_only).lower()
             params['Options.StaticRoutesOnly'] = static_routes_only
+        if tunnel_options is not None:
+            for i, opts in enumerate(tunnel_options):
+                psk = opts.get("PreSharedKey")
+                if psk:
+                    params['Options.TunnelOptions.{0}.PreSharedKey'.format(i)] = psk
+
+                tun_cidr = opts.get("TunnelInsideCidr")
+                if tun_cidr:
+                    params[
+                        'Options.TunnelOptions.{0}.TunnelInsideCidr'.format(i)
+                    ] = tun_cidr
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVpnConnection', params, VpnConnection)

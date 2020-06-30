@@ -37,8 +37,9 @@ class VpnConnectionOptions(object):
         BGP.
 
     """
-    def __init__(self, static_routes_only=None):
+    def __init__(self, static_routes_only=None, tunnel_options=None):
         self.static_routes_only = static_routes_only
+        self.tunnel_options = tunnel_options
 
     def __repr__(self):
         return 'VpnConnectionOptions'
@@ -49,6 +50,8 @@ class VpnConnectionOptions(object):
     def endElement(self, name, value, connection):
         if name == 'staticRoutesOnly':
             self.static_routes_only = True if value == 'true' else False
+        elif name == 'tunnelOptions':
+            self.tunnel_options = value
         else:
             setattr(self, name, value)
 
