@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Jun 30 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC23
+- vpc: support vpnc_create options specification
+
 * Mon Jun 15 2020 Evgeny Kovalev <evgkovalev@croc.ru> - 2.46.1-CROC22
 - ec2: add new method 'CreateDefaultSubnet'
 
