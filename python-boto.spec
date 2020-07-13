@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Jul 13 2020 Alexandr Chernev <achernev@croc.ru> - 2.46.1-CROC24
+- connection,utils: convert max_retry_delay to float before comparison
+
 * Tue Jun 30 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC23
 - vpc: support vpnc_create options specification
 
