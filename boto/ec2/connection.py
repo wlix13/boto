@@ -4772,7 +4772,7 @@ class EC2Connection(AWSQueryConnection):
                              [('item', NetworkInterface)], verb='POST')
 
     def create_network_interface(self, subnet_id, private_ip_address=None,
-                                 description=None, groups=None, dry_run=False):
+                                 description=None, groups=None, dry_run=False, tags=None):
         """
         Creates a network interface in the specified subnet.
 
@@ -4796,6 +4796,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created network interface.
+
         :rtype: :class:`boto.ec2.networkinterface.NetworkInterface`
         :return: The newly created network interface.
         """
@@ -4814,6 +4817,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, ids, 'SecurityGroupId')
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'network-interface'))
         return self.get_object('CreateNetworkInterface', params,
                                NetworkInterface, verb='POST')
 
