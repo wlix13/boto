@@ -38,6 +38,7 @@ from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
 from boto.regioninfo import connect
+from boto.utils import tags_to_tag_specification
 
 
 def regions(**kw_params):
@@ -1158,7 +1159,7 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 
     def create_subnet(self, vpc_id, cidr_block, availability_zone=None,
-                      dry_run=False):
+                      dry_run=False, tags=None):
         """
         Create a new Subnet
 
@@ -1174,6 +1175,9 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created subnet.
+
         :rtype: The newly created Subnet
         :return: A :class:`boto.vpc.customergateway.Subnet` object
         """
@@ -1183,6 +1187,8 @@ class VPCConnection(EC2Connection):
             params['AvailabilityZone'] = availability_zone
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'subnet'))
         return self.get_object('CreateSubnet', params, Subnet)
 
     def create_default_subnet(self, availability_zone, dry_run=False):
