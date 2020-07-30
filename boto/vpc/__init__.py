@@ -276,7 +276,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DisassociateRouteTable', params)
 
-    def create_route_table(self, vpc_id, dry_run=False):
+    def create_route_table(self, vpc_id, dry_run=False, tags=None):
         """
         Creates a new route table.
 
@@ -286,12 +286,17 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created route table.
+
         :rtype: The newly created route table
         :return: A :class:`boto.vpc.routetable.RouteTable` object
         """
         params = {'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'route-table'))
         return self.get_object('CreateRouteTable', params, RouteTable)
 
     def delete_route_table(self, route_table_id, dry_run=False):
