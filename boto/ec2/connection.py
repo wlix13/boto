@@ -4594,7 +4594,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribePlacementGroups', params,
                              [('item', PlacementGroup)], verb='POST')
 
-    def create_placement_group(self, name, strategy='cluster', dry_run=False):
+    def create_placement_group(self, name, strategy='cluster', dry_run=False, tags=None):
         """
         Create a new placement group for your account.
         This will create the placement group within the region you
@@ -4610,12 +4610,17 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created placement group.
+
         :rtype: bool
         :return: True if successful
         """
         params = {'GroupName': name, 'Strategy': strategy}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'placement-group'))
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
         return group
 
