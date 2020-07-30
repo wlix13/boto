@@ -3301,7 +3301,7 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SecurityGroup)], verb='POST')
 
     def create_security_group(self, name, description, vpc_id=None,
-                              dry_run=False):
+                              dry_run=False, tags=None):
         """
         Create a new security group for your account.
         This will create the security group within the region you
@@ -3319,6 +3319,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created security group.
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The newly created :class:`boto.ec2.securitygroup.SecurityGroup`.
         """
@@ -3329,7 +3332,8 @@ class EC2Connection(AWSQueryConnection):
             params['VpcId'] = vpc_id
         if dry_run:
             params['DryRun'] = 'true'
-
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'security-group'))
         group = self.get_object('CreateSecurityGroup', params,
                                 SecurityGroup, verb='POST')
         group.name = name
