@@ -75,6 +75,8 @@ from boto.compat import six
 from boto.ec2.export_task import ExportTask, ExportVolumeTask
 from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 from boto.ec2.virtualswitch import VirtualSwitch
+from boto.utils import tags_to_tag_specification
+
 
 #boto.set_stream_logger('ec2')
 
@@ -1026,15 +1028,9 @@ class EC2Connection(AWSQueryConnection):
         if switch_ids:
             self.build_list_params(params, switch_ids, 'SwitchId')
         if instance_tags:
-            params["TagSpecification.0.ResourceType"] = "instance"
-            for tag_n, tag in enumerate(instance_tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(instance_tags, 'instance'))
         if volume_tags:
-            params["TagSpecification.1.ResourceType"] = "volume"
-            for tag_n, tag in enumerate(volume_tags):
-                params["TagSpecification.1.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.1.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(volume_tags, 'volume', specification_id=1))
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -2619,10 +2615,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "volume"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'volume'))
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id, dry_run=False):
@@ -2808,10 +2801,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "snapshot"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'snapshot'))
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
         return snapshot
@@ -3199,10 +3189,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "key-pair"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'key-pair'))
 
         return self.get_object('CreateKeyPair', params, KeyPair, verb='POST')
 
@@ -3266,10 +3253,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "key-pair"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'key-pair'))
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
 
     # SecurityGroup methods
