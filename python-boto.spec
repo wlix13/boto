@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC25%{?buildid}%{?dist}
+Release:        CROC26%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,17 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Sep 08 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC26
+- utils, ec2: move tagging on creation for common usage
+- vpc: add tagging on creation for subnets
+- vpc: add tagging on creation for acls
+- vpc: add tagging on creation for dopts
+- ec2: add tagging on creation for network interfaces
+- ec2: add tagging on creation for placement groups
+- vpc: add tagging on creation for route tables
+- ec2: add tagging on creation for security groups
+- vpc: add tagging on creation for vpc
+
 * Wed Aug 05 2020 Evgeny Kovalev <evgkovalev@croc.ru> - 2.46.1-CROC25
 - tariff: add deprecation status to instance type, volume type, other
 
