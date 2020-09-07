@@ -1089,3 +1089,21 @@ def parse_host(hostname):
         return hostname.split(']:', 1)[0].strip('[]')
     else:
         return hostname.split(':', 1)[0]
+
+
+def tags_to_tag_specification(tags, resource_type, specification_id=0):
+    """Transforms tags from list type to TagSpecification format.
+
+    :param list tags: list of dicts. [{"key": ..., "value": ...}].
+    :param str resource_type: tag resource type.
+    :param int specification_id: TagSpecification id.
+    :return: dict: tag specification.
+    """
+
+    params = {'TagSpecification.{0}.ResourceType'.format(specification_id): resource_type}
+    for tag_n, tag in enumerate(tags):
+        params['TagSpecification.{0}.Tag.{1}.Key'.format(
+            specification_id, tag_n)] = tag['key']
+        params['TagSpecification.{0}.Tag.{1}.Value'.format(
+            specification_id, tag_n)] = tag['value']
+    return params

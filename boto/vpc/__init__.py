@@ -38,6 +38,7 @@ from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
 from boto.regioninfo import connect
+from boto.utils import tags_to_tag_specification
 
 
 def regions(**kw_params):
@@ -110,7 +111,7 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
     def create_vpc(self, cidr_block, instance_tenancy=None, dry_run=False,
-                   description=None):
+                   description=None, tags=None):
         """
         Create a new Virtual Private Cloud.
 
@@ -127,6 +128,9 @@ class VPCConnection(EC2Connection):
         :type description: string
         :param description: Description of the VPC.
 
+        :type tags: list of dicts
+        :param tags to apply to created VPC.
+
         :rtype: The newly created VPC
         :return: A :class:`boto.vpc.vpc.VPC` object
         """
@@ -137,6 +141,8 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         if description:
             params['Description'] = description
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'vpc'))
         return self.get_object('CreateVpc', params, VPC)
 
     def delete_vpc(self, vpc_id, dry_run=False):
@@ -275,7 +281,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DisassociateRouteTable', params)
 
-    def create_route_table(self, vpc_id, dry_run=False):
+    def create_route_table(self, vpc_id, dry_run=False, tags=None):
         """
         Creates a new route table.
 
@@ -285,12 +291,17 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created route table.
+
         :rtype: The newly created route table
         :return: A :class:`boto.vpc.routetable.RouteTable` object
         """
         params = {'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'route-table'))
         return self.get_object('CreateRouteTable', params, RouteTable)
 
     def delete_route_table(self, route_table_id, dry_run=False):
@@ -597,17 +608,22 @@ class VPCConnection(EC2Connection):
 
         return self.associate_network_acl(default_acl_id, subnet_id)
 
-    def create_network_acl(self, vpc_id):
+    def create_network_acl(self, vpc_id, tags=None):
         """
         Creates a new network ACL.
 
         :type vpc_id: str
         :param vpc_id: The VPC ID to associate this network ACL with.
 
+        :type tags: list of dicts
+        :param tags to apply to created network ACL.
+
         :rtype: The newly created network ACL
         :return: A :class:`boto.vpc.networkacl.NetworkAcl` object
         """
         params = {'VpcId': vpc_id}
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'network-acl'))
         return self.get_object('CreateNetworkAcl', params, NetworkAcl)
 
     def delete_network_acl(self, network_acl_id):
@@ -1158,7 +1174,7 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 
     def create_subnet(self, vpc_id, cidr_block, availability_zone=None,
-                      dry_run=False):
+                      dry_run=False, tags=None):
         """
         Create a new Subnet
 
@@ -1174,6 +1190,9 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created subnet.
+
         :rtype: The newly created Subnet
         :return: A :class:`boto.vpc.customergateway.Subnet` object
         """
@@ -1183,6 +1202,8 @@ class VPCConnection(EC2Connection):
             params['AvailabilityZone'] = availability_zone
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'subnet'))
         return self.get_object('CreateSubnet', params, Subnet)
 
     def create_default_subnet(self, availability_zone, dry_run=False):
@@ -1252,7 +1273,7 @@ class VPCConnection(EC2Connection):
 
     def create_dhcp_options(self, domain_name=None, domain_name_servers=None,
                             ntp_servers=None, netbios_name_servers=None,
-                            netbios_node_type=None, dry_run=False):
+                            netbios_node_type=None, dry_run=False, tags=None):
         """
         Create a new DhcpOption
 
@@ -1283,6 +1304,9 @@ class VPCConnection(EC2Connection):
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
+
+        :type tags: list of dicts
+        :param tags to apply to created dhcp options
 
         :rtype: The newly created DhcpOption
         :return: A :class:`boto.vpc.customergateway.DhcpOption` object
@@ -1321,6 +1345,9 @@ class VPCConnection(EC2Connection):
                                         'netbios-node-type', netbios_node_type)
         if dry_run:
             params['DryRun'] = 'true'
+
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'dhcp-options'))
 
         return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 

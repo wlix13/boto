@@ -75,6 +75,8 @@ from boto.compat import six
 from boto.ec2.export_task import ExportTask, ExportVolumeTask
 from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 from boto.ec2.virtualswitch import VirtualSwitch
+from boto.utils import tags_to_tag_specification
+
 
 #boto.set_stream_logger('ec2')
 
@@ -1026,15 +1028,9 @@ class EC2Connection(AWSQueryConnection):
         if switch_ids:
             self.build_list_params(params, switch_ids, 'SwitchId')
         if instance_tags:
-            params["TagSpecification.0.ResourceType"] = "instance"
-            for tag_n, tag in enumerate(instance_tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(instance_tags, 'instance'))
         if volume_tags:
-            params["TagSpecification.1.ResourceType"] = "volume"
-            for tag_n, tag in enumerate(volume_tags):
-                params["TagSpecification.1.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.1.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(volume_tags, 'volume', specification_id=1))
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -2619,10 +2615,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "volume"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'volume'))
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id, dry_run=False):
@@ -2808,10 +2801,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "snapshot"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'snapshot'))
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
         return snapshot
@@ -3199,10 +3189,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "key-pair"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'key-pair'))
 
         return self.get_object('CreateKeyPair', params, KeyPair, verb='POST')
 
@@ -3266,10 +3253,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
-            params["TagSpecification.0.ResourceType"] = "key-pair"
-            for tag_n, tag in enumerate(tags):
-                params["TagSpecification.0.Tag.{0}.Key".format(tag_n)] = tag["key"]
-                params["TagSpecification.0.Tag.{0}.Value".format(tag_n)] = tag["value"]
+            params.update(tags_to_tag_specification(tags, 'key-pair'))
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
 
     # SecurityGroup methods
@@ -3317,7 +3301,7 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SecurityGroup)], verb='POST')
 
     def create_security_group(self, name, description, vpc_id=None,
-                              dry_run=False):
+                              dry_run=False, tags=None):
         """
         Create a new security group for your account.
         This will create the security group within the region you
@@ -3335,6 +3319,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created security group.
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The newly created :class:`boto.ec2.securitygroup.SecurityGroup`.
         """
@@ -3345,7 +3332,8 @@ class EC2Connection(AWSQueryConnection):
             params['VpcId'] = vpc_id
         if dry_run:
             params['DryRun'] = 'true'
-
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'security-group'))
         group = self.get_object('CreateSecurityGroup', params,
                                 SecurityGroup, verb='POST')
         group.name = name
@@ -4610,7 +4598,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribePlacementGroups', params,
                              [('item', PlacementGroup)], verb='POST')
 
-    def create_placement_group(self, name, strategy='cluster', dry_run=False):
+    def create_placement_group(self, name, strategy='cluster', dry_run=False, tags=None):
         """
         Create a new placement group for your account.
         This will create the placement group within the region you
@@ -4626,12 +4614,17 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created placement group.
+
         :rtype: bool
         :return: True if successful
         """
         params = {'GroupName': name, 'Strategy': strategy}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'placement-group'))
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
         return group
 
@@ -4788,7 +4781,7 @@ class EC2Connection(AWSQueryConnection):
                              [('item', NetworkInterface)], verb='POST')
 
     def create_network_interface(self, subnet_id, private_ip_address=None,
-                                 description=None, groups=None, dry_run=False):
+                                 description=None, groups=None, dry_run=False, tags=None):
         """
         Creates a network interface in the specified subnet.
 
@@ -4812,6 +4805,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags to apply to created network interface.
+
         :rtype: :class:`boto.ec2.networkinterface.NetworkInterface`
         :return: The newly created network interface.
         """
@@ -4830,6 +4826,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, ids, 'SecurityGroupId')
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'network-interface'))
         return self.get_object('CreateNetworkInterface', params,
                                NetworkInterface, verb='POST')
 
