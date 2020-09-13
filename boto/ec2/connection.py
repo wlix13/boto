@@ -66,7 +66,11 @@ from boto.ec2.tariff import Tariff
 from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
-from boto.ec2.networkinterface import NetworkInterface, NetworkInterfaceAttribute
+from boto.ec2.networkinterface import (
+    NetworkInterface,
+    NetworkInterfaceAttribute,
+    PrivateIPAddress,
+)
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
@@ -4781,7 +4785,8 @@ class EC2Connection(AWSQueryConnection):
                              [('item', NetworkInterface)], verb='POST')
 
     def create_network_interface(self, subnet_id, private_ip_address=None,
-                                 description=None, groups=None, dry_run=False, tags=None):
+                                 private_ip_addresses=None, description=None,
+                                 groups=None, dry_run=False, tags=None):
         """
         Creates a network interface in the specified subnet.
 
@@ -4793,6 +4798,10 @@ class EC2Connection(AWSQueryConnection):
         :param private_ip_address: The private IP address of the
             network interface.  If not supplied, one will be chosen
             for you.
+
+        :type private_ip_addresses: list of dicts
+        :param private_ip_addresses: The private IP addresses of the
+            network interface.  One must have 'main' = True.
 
         :type description: str
         :param description: The description of the network interface.
@@ -4814,6 +4823,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'SubnetId': subnet_id}
         if private_ip_address:
             params['PrivateIpAddress'] = private_ip_address
+        if private_ip_addresses:
+            PrivateIPAddress.build_ec2_params(params, private_ip_addresses)
         if description:
             params['Description'] = description
         if groups:
