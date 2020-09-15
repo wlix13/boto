@@ -309,6 +309,17 @@ class PrivateIPAddress(object):
         return "PrivateIPAddress(%s, primary=%s)" % (self.private_ip_address,
                                                      self.primary)
 
+    @staticmethod
+    def build_ec2_params(params, addresses_spec):
+        """Add PrivateIpAddress list to params."""
+
+        for idx, spec in enumerate(addresses_spec):
+            params[
+                'PrivateIpAddresses.{0}.PrivateIpAddress'.format(idx)
+            ] = spec['private_ip_address']
+
+            params['PrivateIpAddresses.{0}.Primary'.format(idx)] = spec.get('primary', False)
+
 
 class NetworkInterfaceCollection(list):
     def __init__(self, *interfaces):
