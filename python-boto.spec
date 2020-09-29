@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC27%{?buildid}%{?dist}
+Release:        CROC28%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -63,10 +63,10 @@ BuildRequires:  python-mock
 BuildRequires:  python-nose
 BuildRequires:  python-requests
 %if %{with python3}
-BuildRequires:  python%{python3_pkgversion}-httpretty
-BuildRequires:  python%{python3_pkgversion}-mock
-BuildRequires:  python%{python3_pkgversion}-nose
-BuildRequires:  python%{python3_pkgversion}-requests
+BuildRequires:  python36-httpretty
+BuildRequires:  python36-mock
+BuildRequires:  python36-nose
+BuildRequires:  python36-requests
 %endif  # with python3
 %endif  # with unittests
 
