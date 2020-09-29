@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Sep 29 2020 Aleksandr Rudenko <arudenko@croc.ru> - 2.46.1-CROC28
+- spec: change requirements for centos 7.8 build
+
 * Tue Sep 15 2020 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC27
 - ec2: add private_ip_addresses to create_network_interface
 
