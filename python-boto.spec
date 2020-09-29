@@ -63,10 +63,10 @@ BuildRequires:  python-mock
 BuildRequires:  python-nose
 BuildRequires:  python-requests
 %if %{with python3}
-BuildRequires:  python%{python3_pkgversion}-httpretty
-BuildRequires:  python%{python3_pkgversion}-mock
-BuildRequires:  python%{python3_pkgversion}-nose
-BuildRequires:  python%{python3_pkgversion}-requests
+BuildRequires:  python36-httpretty
+BuildRequires:  python36-mock
+BuildRequires:  python36-nose
+BuildRequires:  python36-requests
 %endif  # with python3
 %endif  # with unittests
 
