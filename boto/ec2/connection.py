@@ -2547,7 +2547,7 @@ class EC2Connection(AWSQueryConnection):
 
         """
         params = {'VolumeId': volume_id}
-        if attribute in ('AutoEnableIO', 'Description', 'Size', "Iops"):
+        if attribute in ('AutoEnableIO', 'Size', 'Iops'):
             params[attribute + '.Value'] = new_value
         if dry_run:
             params['DryRun'] = 'true'
