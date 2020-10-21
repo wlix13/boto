@@ -9,11 +9,6 @@ services:
   - docker
 env:
   - BOTO_CONFIG=/tmp/nowhere
-before_install:
-  - if [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
-      echo "No pull requests can be sent to the master branch" 1>&2;
-      exit 1;
-    fi
 addons:
   apt:
     packages:
