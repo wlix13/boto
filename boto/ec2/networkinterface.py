@@ -368,8 +368,6 @@ class NetworkInterfaceCollection(list):
             # Associating Public IPs have special logic around them:
             #
             # * Only assignable on an device_index of ``0``
-            # * Only on one interface
-            # * Only if there are no other interfaces being created
             # * Only if it's a new interface (which we can't really guard
             #   against)
             #
@@ -379,12 +377,6 @@ class NetworkInterfaceCollection(list):
                     raise BotoClientError(
                         "Only the interface with device index of 0 can " + \
                         "be provided when using " + \
-                        "'associate_public_ip_address'."
-                    )
-
-                if len(self) > 1:
-                    raise BotoClientError(
-                        "Only one interface can be provided when using " + \
                         "'associate_public_ip_address'."
                     )
 
