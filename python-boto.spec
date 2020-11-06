@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC29%{?buildid}%{?dist}
+Release:        CROC30%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,11 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Fri Nov 6 2020 Alexandr Chernev <achernev@croc.ru> - 2.46.1-CROC30
+- ec2: allow multiple interfaces along with eip assoc
+- tests: remove obsolete part of test_cant_use_public_ip
+- tests: add case for multi-eni spec with eip assoc on primary
+
 * Thu Oct 22 2020 Evgeny Kovalev <evgkovalev@croc.ru> - 2.46.1-CROC29
 - ec2: remove description from modify_volume_attribute
 - ec2: remove description from run_instances
