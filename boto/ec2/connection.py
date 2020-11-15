@@ -328,7 +328,7 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         :type virtualization_type: string
-        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
+        :param virtualization_type: Instance virtualization type (hvm|hvm-legacy).
 
         :type sriov_net_support: string
         :param sriov_net_support: Advanced networking support.
@@ -933,7 +933,7 @@ class EC2Connection(AWSQueryConnection):
         :param public_addressing: Assign elastic IPs to the instances if available.
 
         :type virtualization_type: string
-        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
+        :param virtualization_type: Instance virtualization type (hvm|hvm-legacy).
 
         :type switch_ids: list
         :param switch_ids: list of virtual switch IDs
