@@ -962,7 +962,8 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeCustomerGateways', params,
                              [('item', CustomerGateway)])
 
-    def create_customer_gateway(self, type, ip_address, bgp_asn, dry_run=False):
+    def create_customer_gateway(self, type, ip_address, bgp_asn, dry_run=False,
+                                tags=None):
         """
         Create a new Customer Gateway
 
@@ -980,6 +981,9 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to created CustomerGateway.
+
         :rtype: The newly created CustomerGateway
         :return: A :class:`boto.vpc.customergateway.CustomerGateway` object
         """
@@ -988,6 +992,8 @@ class VPCConnection(EC2Connection):
                   'BgpAsn': bgp_asn}
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'customer-gateway'))
         return self.get_object('CreateCustomerGateway', params, CustomerGateway)
 
     def delete_customer_gateway(self, customer_gateway_id, dry_run=False):
@@ -1436,7 +1442,7 @@ class VPCConnection(EC2Connection):
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id,
                               static_routes_only=None, tunnel_options=None,
-                              dry_run=False):
+                              dry_run=False, tags=None):
         """
         Create a new VPN Connection.
 
@@ -1476,6 +1482,9 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to created VPN connection.
+
         :rtype: The newly created VpnConnection
         :return: A :class:`boto.vpc.vpnconnection.VpnConnection` object
         """
@@ -1499,6 +1508,8 @@ class VPCConnection(EC2Connection):
                     ] = tun_cidr
         if dry_run:
             params['DryRun'] = 'true'
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'vpn-connection'))
         return self.get_object('CreateVpnConnection', params, VpnConnection)
 
     def delete_vpn_connection(self, vpn_connection_id, dry_run=False):
