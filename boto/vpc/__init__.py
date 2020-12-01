@@ -110,8 +110,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
-    def create_vpc(self, cidr_block, instance_tenancy=None, dry_run=False,
-                   description=None, tags=None):
+    def create_vpc(self, cidr_block, instance_tenancy=None, dry_run=False, tags=None):
         """
         Create a new Virtual Private Cloud.
 
@@ -125,9 +124,6 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
-        :type description: string
-        :param description: Description of the VPC.
-
         :type tags: list of dicts
         :param tags to apply to created VPC.
 
@@ -139,8 +135,6 @@ class VPCConnection(EC2Connection):
             params['InstanceTenancy'] = instance_tenancy
         if dry_run:
             params['DryRun'] = 'true'
-        if description:
-            params['Description'] = description
         if tags:
             params.update(tags_to_tag_specification(tags, 'vpc'))
         return self.get_object('CreateVpc', params, VPC)
