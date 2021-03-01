@@ -2527,6 +2527,32 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeVolumeAttribute', params,
                                VolumeAttribute, verb='POST')
 
+    def modify_volume(self, volume_id, iops=None, size=None, dry_run=False):
+        """
+        Modifies Volume.
+
+        :type volume_id: string
+        :param volume_id: The volume id you wish to change
+
+        :type iops: int
+        :param iops: The IOPS value you wish to change
+
+        :type size: int
+        :param size: The Size value you wish to change, in GiB
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {"VolumeId": volume_id}
+        if iops is not None:
+            params["Iops"] = iops
+        if size is not None:
+            params["Size"] = size
+        if dry_run:
+            params["DryRun"] = "true"
+        return self.get_status("ModifyVolume", params, verb="POST")
+
     def modify_volume_attribute(self, volume_id, attribute, new_value,
                                 dry_run=False):
         """
