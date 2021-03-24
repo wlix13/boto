@@ -56,6 +56,7 @@ class Image(TaggedEC2Object):
         self.owner_id = None
         self.owner_alias = None
         self.is_public = False
+        self.is_shared = None
         self.architecture = None
         self.platform = None
         self.type = None
@@ -113,6 +114,8 @@ class Image(TaggedEC2Object):
                         self.id
                     )
                 )
+        elif name == "isShared":
+            self.is_shared = (value == 'true')
         elif name == 'architecture':
             self.architecture = value
         elif name == 'imageType':
