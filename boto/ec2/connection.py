@@ -1954,7 +1954,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
 
-    def allocate_address(self, domain=None, address=None, public_ipv4_pool=None, dry_run=False):
+    def allocate_address(self, domain=None, address=None,
+                         public_ipv4_pool=None, dry_run=False, tags=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
@@ -1972,6 +1973,9 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type tags: list of dicts
+        :param tags: tags to apply to allocated address
+
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
@@ -1988,6 +1992,9 @@ class EC2Connection(AWSQueryConnection):
 
         if dry_run:
             params['DryRun'] = 'true'
+
+        if tags:
+            params.update(tags_to_tag_specification(tags, 'elastic-ip'))
 
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
