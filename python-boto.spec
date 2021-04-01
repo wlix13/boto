@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC34%{?buildid}%{?dist}
+Release:        CROC35%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Thu Apr 1 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC35
+- ec2: add hibernate option to stop_instances
+
 * Mon Mar 1 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC34
 - ec2: add modify_volume method
 
