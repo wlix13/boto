@@ -1054,7 +1054,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('TerminateInstances', params,
                              [('item', Instance)], verb='POST')
 
-    def stop_instances(self, instance_ids=None, force=False, dry_run=False):
+    def stop_instances(self, instance_ids=None, force=False, dry_run=False, hibernate=False):
         """
         Stop the instances specified
 
@@ -1077,6 +1077,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, instance_ids, 'InstanceId')
         if dry_run:
             params['DryRun'] = 'true'
+        if hibernate:
+            params['Hibernate'] = 'true'
         return self.get_list('StopInstances', params,
                              [('item', Instance)], verb='POST')
 
