@@ -43,6 +43,7 @@ class Snapshot(TaggedEC2Object):
     :ivar encrypted: True if this snapshot is encrypted
     :ivar volume_size_in_bytes: The size (in Bytes) of the volume.
     :ivar is_public: True if this snapshot is public.
+    :ivar is_shared: True if this snapshot is shared with others.
     """
 
     AttrName = 'createVolumePermission'
@@ -61,6 +62,7 @@ class Snapshot(TaggedEC2Object):
         self.encrypted = None
         self.volume_size_in_bytes = None
         self.is_public = None
+        self.is_shared = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -91,6 +93,8 @@ class Snapshot(TaggedEC2Object):
             self.volume_size_in_bytes = int(value)
         elif name == 'isPublic':
             self.is_public = (value == 'true')
+        elif name == "isShared":
+            self.is_shared = (value == 'true')
         else:
             setattr(self, name, value)
 
