@@ -50,6 +50,7 @@ class VpnConnectionOptions(object):
         "Phase2EncryptionAlgorithm": True,
         "Phase2IntegrityAlgorithm": True,
         "Phase2LifetimeSeconds": False,
+        "ReplayWindowSize": False,
     }
     """Supported VPN connection tunnel options.
 
