@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC36%{?buildid}%{?dist}
+Release:        CROC37%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Fri May 14 2021 Ivan Konov <ikonov@croc.ru> - 2.46.1-CROC37
+- ec2: enable tagging on address allocation
+
 * Mon Apr 12 2021 Ivan Konov <ikonov@croc.ru> - 2.46.1-CROC36
 - ec2: add field is_shared to snap
 
