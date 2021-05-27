@@ -5107,22 +5107,6 @@ class EC2Connection(AWSQueryConnection):
                   'NetworkId': network_id}
         return self.get_status('DetachVirtualNetwork', params, verb='POST')
 
-    def suspend_instances(self, instance_ids):
-        """
-        Suspend the instances specified
-
-        :type instance_ids: list
-        :param instance_ids: A list of strings of the Instance IDs to suspend
-
-        :rtype: list
-        :return: A list of the instances suspended
-        """
-
-        params = {}
-        self.build_list_params(params, instance_ids, 'InstanceId')
-
-        return self.get_list('SuspendInstances', params, [('item', Instance)], verb='POST')
-
     # External networks
 
     def attach_extnetwork(self, network_name, subnet_id=None, switch_id=None, switch_name=None):
