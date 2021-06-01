@@ -1434,9 +1434,11 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeVpnConnections', params,
                              [('item', VpnConnection)])
 
-    def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id,
-                              static_routes_only=None, tunnel_options=None,
-                              dry_run=False, tags=None):
+    def create_vpn_connection(
+        self, type, customer_gateway_id, vpn_gateway_id,
+        ipv4_network_cidr_local=None, ipv4_network_cidr_remote=None,
+        static_routes_only=None, tunnel_options=None, dry_run=False, tags=None
+    ):
         """
         Create a new VPN Connection.
 
@@ -1454,6 +1456,14 @@ class VPCConnection(EC2Connection):
         :param static_routes_only: Indicates whether the VPN connection
         requires static routes. If you are creating a VPN connection
         for a device that does not support BGP, you must specify true.
+
+        :type ipv4_network_cidr_local: str
+        :param ipv4_network_cidr_local: The IPv4 CIDR on the customer gateway
+        (on-premises) side of the VPN connection.
+
+        :type ipv4_network_cidr_remote: str
+        :param ipv4_network_cidr_remote: The IPv4 CIDR on the cloud side
+        of the VPN connection.
 
         :type tunnel_options: list
         :param tunnel_options: The tunnel options for the VPN connection.
@@ -1511,6 +1521,11 @@ class VPCConnection(EC2Connection):
             if isinstance(static_routes_only, bool):
                 static_routes_only = str(static_routes_only).lower()
             params['Options.StaticRoutesOnly'] = static_routes_only
+
+        if ipv4_network_cidr_local is not None:
+            params['Options.LocalIpv4NetworkCidr'] = ipv4_network_cidr_local
+        if ipv4_network_cidr_remote is not None:
+            params['Options.RemoteIpv4NetworkCidr'] = ipv4_network_cidr_remote
 
         for i, opts in enumerate(tunnel_options):
             for key, value in opts.items():
