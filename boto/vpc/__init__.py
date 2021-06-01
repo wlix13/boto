@@ -1499,6 +1499,7 @@ class VPCConnection(EC2Connection):
               are permitted for the VPN tunnel for phase 2 IKE negotiations.
             - Phase2LifetimeSeconds: The lifetime for phase 2 of the IKE negotiation,
               in seconds.
+            - ReplayWindowSize: The number of packets in an IKE replay window.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
