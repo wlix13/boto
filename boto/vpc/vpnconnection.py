@@ -37,6 +37,25 @@ class VpnConnectionOptions(object):
         BGP.
 
     """
+
+    TUNNEL_OPTIONS_SUPPORTED = {
+        "PreSharedKey": False,
+        "TunnelInsideCidr": False,
+        "IKEVersion": True,
+        "Phase1DHGroupNumber": True,
+        "Phase1EncryptionAlgorithm": True,
+        "Phase1IntegrityAlgorithm": True,
+        "Phase1LifetimeSeconds": False,
+        "Phase2DHGroupNumber": True,
+        "Phase2EncryptionAlgorithm": True,
+        "Phase2IntegrityAlgorithm": True,
+        "Phase2LifetimeSeconds": False,
+    }
+    """Supported VPN connection tunnel options.
+
+    Boolean value for each option specifies whether the option is a list.
+    """
+
     def __init__(self, static_routes_only=None, tunnel_options=None):
         self.static_routes_only = static_routes_only
         self.tunnel_options = tunnel_options

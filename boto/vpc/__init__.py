@@ -33,7 +33,7 @@ from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
-from boto.vpc.vpnconnection import VpnConnection
+from boto.vpc.vpnconnection import VpnConnection, VpnConnectionOptions
 from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
@@ -1472,6 +1472,23 @@ class VPCConnection(EC2Connection):
               will be used for customer gateway side.
               Constraints: A size /30 CIDR block (or a specific IP address of /30 subnet
               in CIDR notation) from the 169.254.255.0/24 range.
+            - IKEVersion: (list) The IKE versions that are permitted for the VPN tunnel.
+            - Phase1DHGroupNumber: (list) One or more Diffie-Hellman group numbers that
+              are permitted for the VPN tunnel for phase 1 IKE negotiations.
+            - Phase1EncryptionAlgorithm: (list) One or more encryption algorithms that
+              are permitted for the VPN tunnel for phase 1 IKE negotiations.
+            - Phase1IntegrityAlgorithm: (list) One or more integrity algorithms that
+              are permitted for the VPN tunnel for phase 1 IKE negotiations.
+            - Phase1LifetimeSeconds: The lifetime for phase 1 of the IKE negotiation,
+              in seconds.
+            - Phase2DHGroupNumber: (list) One or more Diffie-Hellman group numbers that
+              are permitted for the VPN tunnel for phase 2 IKE negotiations.
+            - Phase2EncryptionAlgorithm: (list) One or more encryption algorithms that
+              are permitted for the VPN tunnel for phase 2 IKE negotiations.
+            - Phase2IntegrityAlgorithm: (list) One or more integrity algorithms that
+              are permitted for the VPN tunnel for phase 2 IKE negotiations.
+            - Phase2LifetimeSeconds: The lifetime for phase 2 of the IKE negotiation,
+              in seconds.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1482,28 +1499,34 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created VpnConnection
         :return: A :class:`boto.vpc.vpnconnection.VpnConnection` object
         """
-        params = {'Type': type,
-                  'CustomerGatewayId': customer_gateway_id,
-                  'VpnGatewayId': vpn_gateway_id}
+
+        tunnel_options = tunnel_options or {}
+        params = {
+            'Type': type,
+            'CustomerGatewayId': customer_gateway_id,
+            'VpnGatewayId': vpn_gateway_id,
+        }
+
         if static_routes_only is not None:
             if isinstance(static_routes_only, bool):
                 static_routes_only = str(static_routes_only).lower()
             params['Options.StaticRoutesOnly'] = static_routes_only
-        if tunnel_options is not None:
-            for i, opts in enumerate(tunnel_options):
-                psk = opts.get("PreSharedKey")
-                if psk:
-                    params['Options.TunnelOptions.{0}.PreSharedKey'.format(i)] = psk
 
-                tun_cidr = opts.get("TunnelInsideCidr")
-                if tun_cidr:
-                    params[
-                        'Options.TunnelOptions.{0}.TunnelInsideCidr'.format(i)
-                    ] = tun_cidr
+        for i, opts in enumerate(tunnel_options):
+            for key, value in opts.items():
+                is_list = VpnConnectionOptions.TUNNEL_OPTIONS_SUPPORTED.get(key, False)
+                if is_list:
+                    self.build_complex_list_params(
+                        params, [(v,) for v in value],
+                        "Options.TunnelOptions.{0}.{1}".format(i, key), ("Value",))
+                else:
+                    params['Options.TunnelOptions.{0}.{1}'.format(i, key)] = value
+
         if dry_run:
             params['DryRun'] = 'true'
         if tags:
             params.update(tags_to_tag_specification(tags, 'vpn-connection'))
+
         return self.get_object('CreateVpnConnection', params, VpnConnection)
 
     def delete_vpn_connection(self, vpn_connection_id, dry_run=False):
