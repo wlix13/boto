@@ -38,6 +38,7 @@ class VPC(TaggedEC2Object):
         :ivar cidr_block: The CIDR block for the VPC.
         :ivar is_default: Indicates whether the VPC is the default VPC.
         :ivar instance_tenancy: The allowed tenancy of instances launched into the VPC.
+        :ivar route_propagation: Route propagation information
         :ivar classic_link_enabled: Indicates whether ClassicLink is enabled.
         """
         super(VPC, self).__init__(connection)
@@ -47,6 +48,7 @@ class VPC(TaggedEC2Object):
         self.cidr_block = None
         self.is_default = None
         self.instance_tenancy = None
+        self.route_propagation = None
         self.classic_link_enabled = None
 
     def __repr__(self):
@@ -65,6 +67,8 @@ class VPC(TaggedEC2Object):
             self.is_default = True if value == 'true' else False
         elif name == 'instanceTenancy':
             self.instance_tenancy = value
+        elif name == 'routePropagation':
+            self.route_propagation = value
         elif name == 'classicLinkEnabled':
             self.classic_link_enabled = value
         else:
