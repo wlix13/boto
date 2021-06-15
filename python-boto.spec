@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC38%{?buildid}%{?dist}
+Release:        CROC39%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,10 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Jun 15 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC39
+- vpc: add create_default_vpc method
+- ec2: remove suspend instances
+
 * Tue Jun 01 2021 Evgeny Kovalev <evgkovalev@croc.ru> - 2.46.1-CROC38
 - vpc: add supported VPN tunnel options constant
 - vpc: handle new VPN tunnel options in create_vpn_connection
