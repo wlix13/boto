@@ -139,6 +139,21 @@ class VPCConnection(EC2Connection):
             params.update(tags_to_tag_specification(tags, 'vpc'))
         return self.get_object('CreateVpc', params, VPC)
 
+    def create_default_vpc(self, dry_run=False):
+        """
+        Create a new default Virtual Private Cloud.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: The newly created VPC
+        :return: A :class:`boto.vpc.vpc.VPC` object
+        """
+        params = {}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateDefaultVpc', params, VPC)
+
     def delete_vpc(self, vpc_id, dry_run=False):
         """
         Delete a Virtual Private Cloud.
