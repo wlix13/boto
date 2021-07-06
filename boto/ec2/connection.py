@@ -5076,37 +5076,6 @@ class EC2Connection(AWSQueryConnection):
 
     # C2 specific methods
 
-    # Instances
-
-    def attach_virtual_network(self, instance_id, network_id):
-        """
-        Attach virtual network to (stopped) instance.
-
-        :type instance_id: string
-        :param instance_id: The instance ID.
-
-        :type network_id: string
-        :param network_id: The ID of the virtual network to be attached
-        """
-        params = {'InstanceId' : instance_id,
-                  'NetworkId' : network_id}
-        return self.get_status('AttachVirtualNetwork', params, verb='POST')
-
-    def detach_virtual_network(self, instance_id, network_id):
-        """
-        Detach virtual network from (stopped) instance.
-
-        :type instance_id: string
-        :param instance_id: The instance ID.
-
-        :type network_id: string
-        :param network_id: The ID of the virtual network to be detached
-        """
-
-        params = {'InstanceId': instance_id,
-                  'NetworkId': network_id}
-        return self.get_status('DetachVirtualNetwork', params, verb='POST')
-
     # External networks
 
     def attach_extnetwork(self, network_name, subnet_id=None, switch_id=None, switch_name=None):
