@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC39%{?buildid}%{?dist}
+Release:        CROC40%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,12 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Jul 12 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC40
+- vpc: remove unused description from vpc
+- ec2: drop legacy Virtual Network API 
+- vpc: add propagating_vgws field to RouteTable entity
+- vpc: add route_propagation field to VPC entity
+
 * Tue Jun 15 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC39
 - vpc: add create_default_vpc method
 - ec2: remove suspend instances
