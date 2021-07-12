@@ -1,0 +1,60 @@
+name: UnitTests
+on:
+  pull_request:
+  push:
+
+jobs:
+  rpmlinter:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: rpmlinter
+      run: |
+        make spec
+        docker run -v "$PWD"/python-boto.spec:/specs/python-boto.spec:z ubun/rpmlinter
+
+  python_test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-20.04
+        python-version:
+          - 2.7
+          - 3.5
+          - 3.6
+        requirements:
+          - requirements.txt
+        include:
+          - os: ubuntu-18.04
+            python-version: 3.3
+            requirements: requirements-py33.txt
+          - os: ubuntu-18.04
+            python-version: 3.4
+            requirements: requirements.txt
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Create .ssh/known_hosts for ssh test
+      run: |
+        mkdir ~/.ssh
+        chmod 0700 ~/.ssh
+        echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+
+    - name: Install Python ${{ matrix.python-version }} dependencies
+      run: |
+        pip install --upgrade pip
+        python -m pip install -r ${{ matrix.requirements }}
+
+    - name: Run tests
+      run: python tests/test.py default
+

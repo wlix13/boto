@@ -1,4 +1,0 @@
-unittest2==0.5.1
-ordereddict==1.1
-pycparser==2.18
-idna==2.7
