@@ -117,7 +117,6 @@ class ImportImageTask(EC2Object):
         self.snapshot_details = None
         self.status = None
         self.status_message = None
-        self.snapshot_details = None
 
     def __repr__(self):
         return 'ImportImageTask:%s' % self.image_id
