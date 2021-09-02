@@ -145,11 +145,6 @@ class TestExportTasks(BaseTestImportExport):
                 <instanceExportDetails>
                     <instanceId>i-instance</instanceId>
                 </instanceExportDetails>
-                <volumeExportDetails>
-                    <item>
-                        <volumeId>i-volume</volumeId>
-                    </item>
-                </volumeExportDetails>
             </item>
         </ExportInstanceResponse>
         """.format(task_id=self.TASK_ID)
@@ -174,7 +169,6 @@ class TestExportTasks(BaseTestImportExport):
         self.assertEquals(task.id, self.TASK_ID)
         self.assertEquals(task.instance_id, "i-instance")
 
-
     def test_describe_export_tasks(self):
         self.set_http_response(status_code=200)
         tasks = self.service_connection.describe_export_tasks([self.TASK_ID])
@@ -188,10 +182,6 @@ class TestExportTasks(BaseTestImportExport):
         self.assertIsInstance(task, ExportTask)
         self.assertEquals(task.id, self.TASK_ID)
         self.assertEquals(task.instance_id, "i-instance")
-        self.assertEquals(len(task.volume_export_details), 1)
-        volume = task.volume_export_details[0]
-        self.assertIsInstance(volume, ExportVolumeTask)
-        self.assertEquals(volume.volume_id, "i-volume")
 
     def test_cancel_export_task(self):
         self.set_http_response(status_code=200)
