@@ -69,7 +69,7 @@ class ExportTask(EC2Object):
         elif name == 'targetEnvironment':
             self.target_environment = value
         elif name == 'statusMessage':
-            self.status_message= value
+            self.status_message = value
         else:
             setattr(self, name, value)
 
