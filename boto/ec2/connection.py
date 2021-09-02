@@ -5171,7 +5171,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_image(self, disk_containers, description=None,
                      architecture=None, platform=None,
-                     notify=False, email=None):
+                     notify=False, email=None, image_name=None):
         """
         Create import image tasks.
 
@@ -5194,6 +5194,9 @@ class EC2Connection(AWSQueryConnection):
         :type email: string
         :param email: (custom) Email for notifications. Comma separated or `None` for user email
 
+        :type image_name: string
+        :param image_name: (custom) The name of the AMI.
+
         :rtype: class:`boto.ec2.import_task.ImportImageTask`
         :return: An instance of ImportImageTask.
         """
@@ -5209,6 +5212,8 @@ class EC2Connection(AWSQueryConnection):
             params['Notify'] = notify
         if email:
             params['Email'] = email
+        if image_name:
+            params['ImageName'] = image_name
         return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
 
     def import_snapshot(self, bucket, key, disk_format=None, url=None, description=None,
