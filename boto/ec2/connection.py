@@ -5171,7 +5171,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_image(self, disk_containers, description=None,
                      architecture=None, platform=None,
-                     notify=False, email=None):
+                     notify=False, email=None, image_name=None):
         """
         Create import image tasks.
 
@@ -5194,6 +5194,9 @@ class EC2Connection(AWSQueryConnection):
         :type email: string
         :param email: (custom) Email for notifications. Comma separated or `None` for user email
 
+        :type image_name: string
+        :param image_name: (custom) The name of the AMI.
+
         :rtype: class:`boto.ec2.import_task.ImportImageTask`
         :return: An instance of ImportImageTask.
         """
@@ -5209,6 +5212,8 @@ class EC2Connection(AWSQueryConnection):
             params['Notify'] = notify
         if email:
             params['Email'] = email
+        if image_name:
+            params['ImageName'] = image_name
         return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
 
     def import_snapshot(self, bucket, key, disk_format=None, url=None, description=None,
@@ -5393,24 +5398,6 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'ExportTaskId': export_task_id}
         return self.get_object('CancelExportTask', params, BooleanResult, verb='POST')
-
-    # Custom method for changing task priority
-
-    def modify_task_priority(self, task_id, priority):
-        """
-        Modify task priority.
-
-        :type task_id: string
-        :param task_id: Task ID
-
-        :type priority: int
-        :param priority: Priority (-1, 0, 1)
-
-        :rtype: class:`boto.resultset.BooleanResult`
-        :return: An instance of BooleanResult
-        """
-        params = {'TaskId': task_id, 'Priority': priority}
-        return self.get_object('ModifyTaskPriority', params, BooleanResult, verb='POST')
 
     # Custom volume export methods
 

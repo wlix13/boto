@@ -41,17 +41,6 @@ class ExportTask(EC2Object):
         self.target_environment = None
         self.state = None
         self.status_message = None
-        self.volume_export_details = None
-
-    def startElement(self, name, attrs, connection):
-        retval = super(ExportTask, self).startElement(name, attrs, connection)
-        if retval is not None:
-            return retval
-
-        if name == 'volumeExportDetails':
-            self.volume_export_details = VolumeExportDetails()
-            return self.volume_export_details
-        return None
 
     def endElement(self, name, value, connection):
         if name == 'exportTaskId':
@@ -69,7 +58,7 @@ class ExportTask(EC2Object):
         elif name == 'targetEnvironment':
             self.target_environment = value
         elif name == 'statusMessage':
-            self.status_message= value
+            self.status_message = value
         else:
             setattr(self, name, value)
 

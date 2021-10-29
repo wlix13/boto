@@ -54,7 +54,7 @@ class SnapshotDetail(EC2Object):
         if name == 'deviceName':
             self.device_name = value
         elif name == 'diskImageSize':
-            self.disk_image_size = value
+            self.disk_image_size = int(value)
         elif name == 'snapshotId':
             self.snapshot_id = value
         elif name == 'statusMessage':
@@ -117,7 +117,6 @@ class ImportImageTask(EC2Object):
         self.snapshot_details = None
         self.status = None
         self.status_message = None
-        self.snapshot_details = None
 
     def __repr__(self):
         return 'ImportImageTask:%s' % self.image_id
