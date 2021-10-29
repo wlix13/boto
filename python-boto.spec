@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC41%{?buildid}%{?dist}
+Release:        CROC42%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,14 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Fri Oct 29 2021 Alexander Chernev <achernev@croc.ru> - 2.46.1-CROC42
+- ec2: import_task: remove duplicate "self.snapshot_details = None"
+- ec2: export_task: add missed space
+- ec2: export_task: remove volume_export_details field
+- ec2: connection: remove modify_task_priority method
+- ec2: connection: add ImageName to import_image method
+- ec2: import_task: parse diskImageSize as integer
+
 * Mon Sep 13 2021 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC41
 - action: add github action
 - ec2: remove deprecated attributes from modify_volume_attribute
