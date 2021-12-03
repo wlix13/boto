@@ -1630,6 +1630,32 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('EnableVgwRoutePropagation', params)
 
+    def set_bgp_asn(self, vpc_id, asn,
+                    dry_run=False):
+        """
+        Sets specific BGP ASN for VPC.
+
+        WARNING: Must be used with caution, newly set ASNs will not apply to this VPC in
+                 availability zones with running instances, VPN connections, etc.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC
+
+        :type asn: int
+        :param asn: Autonomous System Number
+
+        :rtype: bool
+        :return: True if successful
+        """
+
+        params = {
+            'VpcId': vpc_id,
+            'Asn': asn,
+        }
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('SetBgpAsn', params)
+
     def create_vpn_connection_route(self, destination_cidr_block,
                                     vpn_connection_id, dry_run=False):
         """
