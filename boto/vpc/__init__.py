@@ -1656,6 +1656,23 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('SetBgpAsn', params)
 
+    def unset_bgp_asn(self, vpc_id,
+                      dry_run=False):
+        """
+        Unsets BGP ASN for VPC, reverting to default value.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC
+
+        :rtype: bool
+        :return: True if successful
+        """
+
+        params = {"VpcId": vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('UnsetBgpAsn', params)
+
     def create_vpn_connection_route(self, destination_cidr_block,
                                     vpn_connection_id, dry_run=False):
         """
