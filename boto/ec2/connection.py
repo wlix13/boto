@@ -405,7 +405,8 @@ class EC2Connection(AWSQueryConnection):
 
     def create_image(self, instance_id, name,
                      description=None, no_reboot=False,
-                     block_device_mapping=None, dry_run=False):
+                     block_device_mapping=None, dry_run=False,
+                     image_tags=None, snapshot_tags=None):
         """
         Will create an AMI from the instance in the running or stopped
         state.
@@ -434,6 +435,12 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type image_tags: list of dicts
+        :param image_tags: Tags to apply to created image.
+
+        :type snapshot_tags: list of dicts
+        :param snapshot_tags: Tags to apply to created snapshots that attached to created image.
+
         :rtype: string
         :return: The new image id
         """
@@ -445,6 +452,12 @@ class EC2Connection(AWSQueryConnection):
             params['NoReboot'] = 'true'
         if block_device_mapping:
             block_device_mapping.ec2_build_list_params(params)
+        if image_tags:
+            params.update(tags_to_tag_specification(image_tags, 'image'))
+        if snapshot_tags:
+            params.update(tags_to_tag_specification(
+                snapshot_tags, 'snapshot', specification_id=1 if image_tags else 0)
+            )
         if dry_run:
             params['DryRun'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
