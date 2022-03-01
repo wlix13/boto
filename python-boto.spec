@@ -148,7 +148,7 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
-* Mon Jan 10 2022 Andrey Kulaev <akulaev@croc.ru> - 2.26.1-CROC43
+* Mon Jan 10 2022 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC43
 - vpc: add set_bgp_asn handler
 - vpc: add unset_bgp_asn handler
 
