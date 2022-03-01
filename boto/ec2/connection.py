@@ -3102,7 +3102,7 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'SnapshotId' : snapshot_id}
 
-        if description:
+        if description is not None:
              params['Description.Value'] = description
         if not operation and (user_ids or groups):
             raise BotoClientError('No operation type was specified')
