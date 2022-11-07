@@ -1,4 +1,15 @@
+# Disable debug packages generation
+%global debug_package %{nil}
+
 %global dist_raw %(%{__grep} -oP "release \\K[0-9]+\\.[0-9]+" /etc/system-release | tr -d ".")
+
+%if 0%{?rhel} && 0%{?rhel} >= 8
+%bcond_with python2
+%bcond_without python3
+%else
+%bcond_without python2
+%bcond_with python3
+%endif
 
 %if 0%{?fedora} > 12 || 0%{?rhel} && 0%{?dist_raw} >= 75
 %bcond_without python3
@@ -16,7 +27,11 @@
 %if %{with python3}
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif  # with python3
+%if 0%{?el8}
+%global el_python3_pkgversion 3
+%else
+%global el_python3_pkgversion 36
+%endif
 
 %define pkgname boto
 %define buildid @BUILDID@
@@ -39,32 +54,18 @@ Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
 Source0:        https://pypi.io/packages/source/b/boto/boto-%{version}.tar.gz
 
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-%if %{with python3}
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
-%endif  # with python3
-
-%if %{with python2}
-BuildRequires:  python-httpretty
-BuildRequires:  python-mock
-BuildRequires:  python-nose
-BuildRequires:  python-requests
-%endif  # with python2
-%if %{with python3}
-BuildRequires:  python36-httpretty
-BuildRequires:  python36-mock
-BuildRequires:  python36-nose
-BuildRequires:  python36-requests
-%endif  # with python3
-
+BuildRequires:  python%{el_python3_pkgversion}-httpretty
+BuildRequires:  python%{el_python3_pkgversion}-mock
+BuildRequires:  python%{el_python3_pkgversion}-nose
+BuildRequires:  python%{el_python3_pkgversion}-requests
 BuildArch:      noarch
 
 %description
 %{descr}
 
-
+%if %{with python2}
 %package -n python2-%{pkgname}
 Summary:        %{sum}
 Requires:       python-requests
@@ -74,14 +75,13 @@ Obsoletes:      python-boto <= 1441065600:2.46.1-CROC14%{?dist}
 
 %description -n python2-%{pkgname}
 %{descr}
-
+%endif # with python2
 
 %if %{with python3}
 %package -n python%{python3_pkgversion}-%{pkgname}
 Summary:        A simple, lightweight interface to Amazon Web Services
 
 Requires:       python%{python3_pkgversion}-requests
-
 
 %description -n python%{python3_pkgversion}-%{pkgname}
 %{descr}
@@ -93,15 +93,18 @@ Requires:       python%{python3_pkgversion}-requests
 
 
 %build
+%if %{with python2}
 %{py2_build}
+%endif # with python2
 %if %{with python3}
 %{py3_build}
 %endif  # with python3
 
 
 %install
+%if %{with python2}
 %{py2_install}
-
+%endif # with python2
 %if %{with python3}
 %{py3_install}
 %endif  # with python3
@@ -117,12 +120,13 @@ rm -f %buildroot/%{_bindir}/*
 %{__python3} tests/test.py default
 %endif  # with python3
 
-
+%if %{with python2}
 %files -n python2-%{pkgname}
 %defattr(-,root,root,-)
 %{python2_sitelib}/boto
 %{python2_sitelib}/boto-%{version}-*.egg-info
 %doc LICENSE README.rst
+%endif
 
 %if %{with python3}
 %files -n python%{python3_pkgversion}-%{pkgname}
