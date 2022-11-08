@@ -13,21 +13,10 @@
 %endif
 
 
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif
 %if %{with python3}
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif  # with python3
-
-# Unit tests don't work on python 2.6
-%if 0%{?el6}
-%bcond_with unittests
-%else
-%bcond_without unittests
-%endif
 
 %define pkgname boto
 %define buildid @BUILDID@
@@ -57,18 +46,18 @@ BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
 %endif  # with python3
 
-%if %{with unittests}
+%if %{with python2}
 BuildRequires:  python-httpretty
 BuildRequires:  python-mock
 BuildRequires:  python-nose
 BuildRequires:  python-requests
+%endif  # with python2
 %if %{with python3}
 BuildRequires:  python36-httpretty
 BuildRequires:  python36-mock
 BuildRequires:  python36-nose
 BuildRequires:  python36-requests
 %endif  # with python3
-%endif  # with unittests
 
 BuildArch:      noarch
 
@@ -79,9 +68,6 @@ BuildArch:      noarch
 %package -n python2-%{pkgname}
 Summary:        %{sum}
 Requires:       python-requests
-%if 0%{?el6}
-Requires:       python-ordereddict
-%endif
 Provides:       python-boto
 Obsoletes:      python-boto <= 1441065600:2.46.1-CROC14%{?dist}
 
@@ -124,12 +110,12 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %check
-%if %{with unittests}
+%if %{with python2}
 %{__python2} tests/test.py default
+%endif # with python2
 %if %{with python3}
 %{__python3} tests/test.py default
 %endif  # with python3
-%endif  # with unittests
 
 
 %files -n python2-%{pkgname}
