@@ -1,30 +1,3 @@
-# Disable debug packages generation
-%global debug_package %{nil}
-
-%global dist_raw %(%{__grep} -oP "release \\K[0-9]+\\.[0-9]+" /etc/system-release | tr -d ".")
-
-%if 0%{?rhel} && 0%{?rhel} >= 8
-%bcond_with python2
-%bcond_without python3
-%else
-%bcond_without python2
-%bcond_with python3
-%endif
-
-%if 0%{?fedora} > 12 || 0%{?rhel} && 0%{?dist_raw} >= 75
-%bcond_without python3
-%else
-%bcond_with python3
-%endif
-
-# centos 7.2 and lower versions don't have %py2_* macros, so define it manually
-%if 0%{?rhel} && 0%{?dist_raw} <= 72
-%{!?py2_build: %global py2_build %py_build}
-%{!?py2_install: %global py2_install %py_install}
-%endif
-
-
-%if %{with python3}
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %if 0%{?el8}
@@ -65,19 +38,6 @@ BuildArch:      noarch
 %description
 %{descr}
 
-%if %{with python2}
-%package -n python2-%{pkgname}
-Summary:        %{sum}
-Requires:       python-requests
-Provides:       python-boto
-Obsoletes:      python-boto <= 1441065600:2.46.1-CROC14%{?dist}
-
-
-%description -n python2-%{pkgname}
-%{descr}
-%endif # with python2
-
-%if %{with python3}
 %package -n python%{python3_pkgversion}-%{pkgname}
 Summary:        A simple, lightweight interface to Amazon Web Services
 
@@ -85,56 +45,25 @@ Requires:       python%{python3_pkgversion}-requests
 
 %description -n python%{python3_pkgversion}-%{pkgname}
 %{descr}
-%endif  # with python3
-
 
 %prep
 %setup -q -n %pkgname-%version
 
-
 %build
-%if %{with python2}
-%{py2_build}
-%endif # with python2
-%if %{with python3}
 %{py3_build}
-%endif  # with python3
-
 
 %install
-%if %{with python2}
-%{py2_install}
-%endif # with python2
-%if %{with python3}
 %{py3_install}
-%endif  # with python3
-
 rm -f %buildroot/%{_bindir}/*
 
-
 %check
-%if %{with python2}
-%{__python2} tests/test.py default
-%endif # with python2
-%if %{with python3}
 %{__python3} tests/test.py default
-%endif  # with python3
 
-%if %{with python2}
-%files -n python2-%{pkgname}
-%defattr(-,root,root,-)
-%{python2_sitelib}/boto
-%{python2_sitelib}/boto-%{version}-*.egg-info
-%doc LICENSE README.rst
-%endif
-
-%if %{with python3}
 %files -n python%{python3_pkgversion}-%{pkgname}
 %defattr(-,root,root,-)
 %{python3_sitelib}/boto
 %{python3_sitelib}/boto-%{version}-*.egg-info
 %doc LICENSE README.rst
-%endif  # with python3
 
 
 %changelog
