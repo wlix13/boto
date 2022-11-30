@@ -19,14 +19,14 @@ class TestImportImage(BaseTestImportExport):
         <ImportImageResponse xmlns="http://ec2.amazonaws.com/doc/2012-06-01/">
             <item>
                 <importTaskId>{task_id}</importTaskId>
-                <snapshotDetails>
+                <snapshotDetailSet>
                     <item>
                         <snapshotId>i-snapshot1</snapshotId>
                     </item>
                     <item>
                         <snapshotId>i-snapshot2</snapshotId>
                     </item>
-                </snapshotDetails>
+                </snapshotDetailSet>
             </item>
         </ImportImageResponse>
         """.format(task_id=self.TASK_ID)
