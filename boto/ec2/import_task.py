@@ -125,7 +125,7 @@ class ImportImageTask(EC2Object):
         retval = super(ImportImageTask, self).startElement(name, attrs, connection)
         if retval is not None:
             return retval
-        if name == 'snapshotDetails':
+        if name == 'snapshotDetailSet':
             self.snapshot_details = SnapshotDetails()
             return self.snapshot_details
         else:
