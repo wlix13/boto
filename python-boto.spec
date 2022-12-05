@@ -44,7 +44,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC45%{?buildid}%{?dist}
+Release:        CROC46%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -148,6 +148,9 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Mon Dec 05 2022 Anastasia Berezko <aberezko@croc.ru> - 2.46.1-CROC46
+- fix api field name
+
 * Wed Apr 06 2022 Ivan Konov <ikonov@croc.ru> - 2.46.1-CROC45
 - ec2: add tagging to CreateImage
 
