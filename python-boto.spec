@@ -21,7 +21,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC46%{?buildid}%{?dist}
+Release:        CROC47%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -67,6 +67,11 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Thu Jan 26 2023 Andrey Kulaev <akulaev@croc.ru> - 2.46.1-CROC47
+- spec: drop legacy support el6
+- spec: add el8 support
+- spec: remove python2
+
 * Mon Dec 05 2022 Anastasia Berezko <aberezko@croc.ru> - 2.46.1-CROC46
 - fix api field name
 
