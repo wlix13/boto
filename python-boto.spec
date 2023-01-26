@@ -1,32 +1,9 @@
-%global dist_raw %(%{__grep} -oP "release \\K[0-9]+\\.[0-9]+" /etc/system-release | tr -d ".")
-
-%if 0%{?fedora} > 12 || 0%{?rhel} && 0%{?dist_raw} >= 75
-%bcond_without python3
-%else
-%bcond_with python3
-%endif
-
-# centos 7.2 and lower versions don't have %py2_* macros, so define it manually
-%if 0%{?rhel} && 0%{?dist_raw} <= 72
-%{!?py2_build: %global py2_build %py_build}
-%{!?py2_install: %global py2_install %py_install}
-%endif
-
-
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif
-%if %{with python3}
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif  # with python3
-
-# Unit tests don't work on python 2.6
-%if 0%{?el6}
-%bcond_with unittests
+%if 0%{?el8}
+%global el_python3_pkgversion 3
 %else
-%bcond_without unittests
+%global el_python3_pkgversion 36
 %endif
 
 %define pkgname boto
@@ -50,101 +27,43 @@ Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
 Source0:        https://pypi.io/packages/source/b/boto/boto-%{version}.tar.gz
 
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-%if %{with python3}
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
-%endif  # with python3
-
-%if %{with unittests}
-BuildRequires:  python-httpretty
-BuildRequires:  python-mock
-BuildRequires:  python-nose
-BuildRequires:  python-requests
-%if %{with python3}
-BuildRequires:  python36-httpretty
-BuildRequires:  python36-mock
-BuildRequires:  python36-nose
-BuildRequires:  python36-requests
-%endif  # with python3
-%endif  # with unittests
-
+BuildRequires:  python%{el_python3_pkgversion}-httpretty
+BuildRequires:  python%{el_python3_pkgversion}-mock
+BuildRequires:  python%{el_python3_pkgversion}-nose
+BuildRequires:  python%{el_python3_pkgversion}-requests
 BuildArch:      noarch
 
 %description
 %{descr}
 
-
-%package -n python2-%{pkgname}
-Summary:        %{sum}
-Requires:       python-requests
-%if 0%{?el6}
-Requires:       python-ordereddict
-%endif
-Provides:       python-boto
-Obsoletes:      python-boto <= 1441065600:2.46.1-CROC14%{?dist}
-
-
-%description -n python2-%{pkgname}
-%{descr}
-
-
-%if %{with python3}
 %package -n python%{python3_pkgversion}-%{pkgname}
 Summary:        A simple, lightweight interface to Amazon Web Services
 
 Requires:       python%{python3_pkgversion}-requests
 
-
 %description -n python%{python3_pkgversion}-%{pkgname}
 %{descr}
-%endif  # with python3
-
 
 %prep
 %setup -q -n %pkgname-%version
 
-
 %build
-%{py2_build}
-%if %{with python3}
 %{py3_build}
-%endif  # with python3
-
 
 %install
-%{py2_install}
-
-%if %{with python3}
 %{py3_install}
-%endif  # with python3
-
 rm -f %buildroot/%{_bindir}/*
 
-
 %check
-%if %{with unittests}
-%{__python2} tests/test.py default
-%if %{with python3}
 %{__python3} tests/test.py default
-%endif  # with python3
-%endif  # with unittests
 
-
-%files -n python2-%{pkgname}
-%defattr(-,root,root,-)
-%{python2_sitelib}/boto
-%{python2_sitelib}/boto-%{version}-*.egg-info
-%doc LICENSE README.rst
-
-%if %{with python3}
 %files -n python%{python3_pkgversion}-%{pkgname}
 %defattr(-,root,root,-)
 %{python3_sitelib}/boto
 %{python3_sitelib}/boto-%{version}-*.egg-info
 %doc LICENSE README.rst
-%endif  # with python3
 
 
 %changelog
