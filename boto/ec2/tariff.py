@@ -9,8 +9,11 @@ class Tariff(object):
         self.currency = None
         self.description = None
         self.instances = None
+        self.instance_types = None
         self.volumes = None
         self.others = None
+        self.oses = None
+        self.hosts = None
 
     def startElement(self, name, attrs, connection):
         if name == 'instances':
@@ -22,6 +25,15 @@ class Tariff(object):
         elif name == 'others':
             self.others = ResultSet([('item', TariffService)])
             return self.others
+        elif name == 'oses':
+            self.oses = ResultSet([('item', TariffOS)])
+            return self.oses
+        elif name == 'instance_types':
+            self.instance_types = ResultSet([('item', TariffInstanceType)])
+            return self.instance_types
+        elif name == 'hosts':
+            self.hosts = ResultSet([('item', TariffHostType)])
+            return self.hosts
         else:
             return None
 
@@ -126,3 +138,99 @@ class TariffVolume(TariffService):
         else:
             super(TariffVolume, self).endElement(name, value, connection)
 
+
+class TariffInstanceType(TariffService):
+    def __init__(self, connection=None):
+        super(TariffInstanceType, self).__init__(connection)
+        self.cpu = None
+        self.memory = None
+        self.ccus = None
+
+    def endElement(self, name, value, connection):
+        if name == 'cpu':
+            self.cpu = int(value)
+        elif name == 'memory':
+            self.memory = int(value)
+        elif name == 'ccus':
+            self.ccus = Decimal(value)
+        else:
+            super(TariffInstanceType, self).endElement(name, value, connection)
+
+
+class TariffLicenceTypeParameters(object):
+    def __init__(self, connection=None):
+        self.core_count = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'core_count':
+            self.core_count = int(value)
+        else:
+            setattr(self, name, value)
+
+
+class TariffLicenceType(object):
+    def __init__(self, connection=None):
+        self.base = None
+        self.parameters = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'parameters':
+            self.parameters = TariffLicenceTypeParameters()
+            return self.parameters
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'base':
+            self.base = value
+        else:
+            setattr(self, name, value)
+
+
+class TariffOS(TariffService):
+    def __init__(self, connection=None):
+        super(TariffOS, self).__init__(connection)
+        self.licence_type = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'licence_type':
+            self.licence_type = TariffLicenceType()
+            return self.licence_type
+        else:
+            return super(TariffOS, self).startElement(name, attrs, connection)
+
+
+class TariffHostType(TariffService):
+    def __init__(self, connection=None):
+        super(TariffHostType, self).__init__(connection)
+        self.cpu_generation = None
+        self.physical_cores = None
+        self.sockets = None
+        self.memory = None
+        self.ccus = None
+        self.commitment = None
+        self.type = None
+
+    def startElement(self, name, attrs, connection):
+        return super(TariffHostType, self).startElement(name, attrs, connection)
+
+    def endElement(self, name, value, connection):
+        if name == 'cpu_generation':
+            self.cpu_generation = value
+        elif name == 'physical_cores':
+            self.physical_cores = int(value)
+        elif name == 'sockets':
+            self.sockets = int(value)
+        elif name == 'memory':
+            self.memory = int(value)
+        elif name == 'ccus':
+            self.ccus = Decimal(value)
+        elif name == 'commitment':
+            self.commitment = int(value)
+        elif name == 'type':
+            self.type = value
+        else:
+            super(TariffHostType, self).endElement(name, value, connection)
