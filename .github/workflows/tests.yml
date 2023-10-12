@@ -22,18 +22,10 @@ jobs:
         os:
           - ubuntu-20.04
         python-version:
-          - 2.7
           - 3.5
           - 3.6
         requirements:
           - requirements.txt
-        include:
-          - os: ubuntu-18.04
-            python-version: 3.3
-            requirements: requirements-py33.txt
-          - os: ubuntu-18.04
-            python-version: 3.4
-            requirements: requirements.txt
 
     steps:
     - uses: actions/checkout@v2
