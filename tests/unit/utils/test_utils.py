@@ -85,7 +85,7 @@ class TestPassword(unittest.TestCase):
         def hmac_hashfunc(cls, msg):
             if not isinstance(msg, bytes):
                 msg = msg.encode('utf-8')
-            return hmac.new(b'mysecretkey', msg)
+            return hmac.new(b'mysecretkey', msg, digestmod=hashlib.md5)
 
         class HMACPassword(Password):
             hashfunc = hmac_hashfunc
@@ -95,15 +95,15 @@ class TestPassword(unittest.TestCase):
         password.set('foo')
 
         self.assertEquals(str(password),
-                          hmac.new(b'mysecretkey', b'foo').hexdigest())
+                          hmac.new(b'mysecretkey', b'foo', digestmod=hashlib.md5).hexdigest())
 
     def test_constructor(self):
-        hmac_hashfunc = lambda msg: hmac.new(b'mysecretkey', msg)
+        hmac_hashfunc = lambda msg: hmac.new(b'mysecretkey', msg, digestmod=hashlib.md5)
 
         password = Password(hashfunc=hmac_hashfunc)
         password.set('foo')
         self.assertEquals(password.str,
-                          hmac.new(b'mysecretkey', b'foo').hexdigest())
+                          hmac.new(b'mysecretkey', b'foo', digestmod=hashlib.md5).hexdigest())
 
 
 class TestPythonizeName(unittest.TestCase):

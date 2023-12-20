@@ -24,6 +24,9 @@ import unittest
 import logging
 import time
 
+from hashlib import md5
+
+
 log= logging.getLogger('password_property_test')
 log.setLevel(logging.DEBUG)
 
@@ -37,7 +40,7 @@ class PasswordPropertyTest(unittest.TestCase):
     def hmac_hashfunc(self):
         import hmac
         def hashfunc(msg):
-            return hmac.new('mysecret', msg)
+            return hmac.new('mysecret', msg, digestmod=md5)
         return hashfunc
 
     def test_model(self,hashfunc=None):
@@ -98,7 +101,7 @@ class PasswordPropertyTest(unittest.TestCase):
 
     def test_password_constructor_hashfunc(self):
         import hmac
-        myhashfunc=lambda msg: hmac.new('mysecret', msg)
+        myhashfunc=lambda msg: hmac.new('mysecret', msg, digestmod=md5)
         cls = self.test_model(hashfunc=myhashfunc)
         obj = cls()
         obj.password='hello'
