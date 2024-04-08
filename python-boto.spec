@@ -1,6 +1,6 @@
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%if 0%{?el8}
+%if 0%{?rhel} == 8 || 0%{?redos} == 7
 %global el_python3_pkgversion 3
 %else
 %global el_python3_pkgversion 36
@@ -21,7 +21,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        CROC48%{?buildid}%{?dist}
+Release:        CROC49%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -67,6 +67,11 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Thu Dec 21 2023 Ivan Konov <ikonov@croc.ru> - 2.46.1-CROC49
+- tests: add parameter required since py3.8 to hmac.new() calls
+- tests: replace deprecated cgi.escape() with html.escape()
+- spec: fixes for redos build
+
 * Thu Oct 12 2023 Grigoriy Kulagin <grkulagin@croc.ru> - 2.46.1-CROC48
 - .github: remove old py version checks
 - ec2: add os and new instance type format
