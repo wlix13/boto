@@ -21,7 +21,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        ROCKIT49%{?buildid}%{?dist}
+Release:        ROCKIT50%{?buildid}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
@@ -67,6 +67,10 @@ rm -f %buildroot/%{_bindir}/*
 
 
 %changelog
+* Tue Jul 23 2024 Linar Nasyyrov <lnasyyrov@k2.cloud> - 2.46.1-ROCKIT50
+- ec2: add RamMonitoring Instance attribute
+- spec: move to ROCKIT
+
 * Thu Dec 21 2023 Ivan Konov <ikonov@croc.ru> - 2.46.1-CROC49
 - tests: add parameter required since py3.8 to hmac.new() calls
 - tests: replace deprecated cgi.escape() with html.escape()
